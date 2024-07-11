@@ -1,0 +1,11 @@
+citHeader("To cite `Analysis24TBVaccSexDiffPeak` in publications use:")
+
+bibentry(bibtype = "Misc",
+         key = "rodo",
+         title = "Analysis24TBVaccSexDiffPeak: Detect differences in vaccine-induced responses by sex",
+         author = person(given = "Miguel",
+                         family = "Rodo",
+                         email = "miguel.rodo@uct.ac.za"),
+         url = "https://github.com/SATVILab/Analysis24TBVaccSexDiffPeak/#readme",
+         abstract = "Detect differences in vaccine-induced responses by sex",
+         version = "0.0.0-1")
