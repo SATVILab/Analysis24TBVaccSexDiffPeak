@@ -5,6 +5,12 @@ format:
     embed-resources: true
 ---
 
+```{r}
+#| include: false
+library(ggplot2)
+library(tibble)
+```
+
 
 ## Data prep
 
@@ -20,6 +26,7 @@ Here we extract the peak response:
 ```{r}
 data_tidy_vacc_peak <- data_tidy_vacc_freq |>
   vacc_extract_peak()
+data_tidy_vacc_peak
 ```
 
 Now we calculate the summed response and the peak response:
