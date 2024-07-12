@@ -1,8 +1,7 @@
 Package: Analysis24TBVaccSexDiffPeak
 Title: Detect differences in vaccine-induced responses by sex
-Version: 0.0.0-1
-Authors@R: 
-    person("Miguel", "Rodo", , "miguel.rodo@uct.ac.za", role = c("aut", "cre"))
+Version: 0.1.0
+Authors@R: person("Miguel", "Rodo", , "miguel.rodo@uct.ac.za", role = c("aut", "cre"))
 Maintainer: Miguel Rodo <miguel.rodo@uct.ac.za>
 Description: Detect differences in vaccine-induced responses by sex
 License: {{ License }}
