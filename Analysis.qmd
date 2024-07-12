@@ -1,4 +1,10 @@
-# Analyse Peak Response
+---
+title: Analyse peak response
+format:
+  html:
+    embed-resources: true
+---
+
 
 ## Data prep
 
