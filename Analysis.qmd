@@ -43,3 +43,8 @@ data_tidy_vacc_profile
 
 ## Analysis
 
+```{r}
+group <- with(data_tidy_vacc_peak, interaction(sex, vaccine, infxn))
+test <- kruskal.test(response ~ group, data = data_tidy_vacc_peak)
+test
+```
