@@ -43,8 +43,27 @@ data_tidy_vacc_profile
 
 ## Analysis
 
+Kruskal-Wallis Test:
+
 ```{r}
-group <- with(data_tidy_vacc_peak, interaction(sex, vaccine, infxn))
-test <- kruskal.test(response ~ group, data = data_tidy_vacc_peak)
+vacc_inf_sex <- with(data_tidy_vacc_peak, interaction(vaccine, infxn, sex))
+test <- kruskal.test(response ~ vacc_inf_sex, data = data_tidy_vacc_peak)
 test
 ```
+
+Load betareg package:
+
+```{r}
+#install.packages('betareg')
+library(betareg)
+```
+
+Load gamlss package:
+
+```{r}
+#install.packages('gamlss')
+library(gamlss)
+```
+
+
+
