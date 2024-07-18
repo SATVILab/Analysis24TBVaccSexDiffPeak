@@ -46,16 +46,47 @@ data_tidy_vacc_profile
 Kruskal-Wallis Test:
 
 ```{r}
-vacc_inf_sex <- with(data_tidy_vacc_peak, interaction(vaccine, infxn, sex))
-test <- kruskal.test(response ~ vacc_inf_sex, data = data_tidy_vacc_peak)
+vacc_inf_sex <- with(data_tidy_vacc_summed, interaction(vaccine, infxn, sex))
+test <- kruskal.test(response ~ vacc_inf_sex, data = data_tidy_vacc_summed)
 test
+```
+
+Skewness of Responses:
+
+```{r}
+#install.packages('moments')
+library(moments)
+skewness(data_tidy_vacc_summed$response)
+
+png(file="histogram.png")
+hist(data_tidy_vacc_summed$response, col='blue')
+dev.off()
 ```
 
 Load betareg package:
 
 ```{r}
 #install.packages('betareg')
+#install.packages('statmod')
+#install.packages("numDeriv")
 library(betareg)
+```
+
+Transform response to lie between 0 and 1:
+
+```{r}
+data_tidy_vacc_summed$response <- data_tidy_vacc_summed$response / max(data_tidy_vacc_summed$response)
+```
+
+Fit a Beta Regression Model:
+
+```{r}
+betareg_model <- betareg(response ~ vaccine + infxn + sex + subset, data = data_tidy_vacc_summed)
+summary(betareg_model)
+
+png(file="beta residuals.png")
+plot(residuals(betareg_model), type = "p",col='red')
+dev.off()
 ```
 
 Load gamlss package:
@@ -65,5 +96,25 @@ Load gamlss package:
 library(gamlss)
 ```
 
+Fit Gamlss model:
 
+```{r}
+data_tidy_vacc_summed$response <- pmin(pmax(data_tidy_vacc_summed$response, .Machine$double.eps), 1 - .Machine$double.eps)
+
+gamlss_model1 <- gamlss(response ~ vaccine + infxn + sex + subset, data = data_tidy_vacc_summed)
+summary(gamlss_model1)
+
+png(file="gamlss residuals 1.png")
+plot(residuals(gamlss_model1), type = "p",col='red')
+dev.off()
+
+gamlss_model2 <- gamlss(response ~ vaccine + infxn + sex + subset, 
+                sigma.formula = ~ vaccine + infxn + sex + subset, 
+                family = BE(), data = data_tidy_vacc_summed)
+summary(gamlss_model2)
+
+png(file="gamlss residuals 2.png")
+plot(residuals(gamlss_model2), type = "p",col='red')
+dev.off()
+```
 
