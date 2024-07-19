@@ -35,11 +35,11 @@ Now we calculate the summed response and the peak response:
 data_tidy_vacc_summed <- data_tidy_vacc_peak |>
   vacc_calc_response_summed("response") |>
   vacc_set_neg_to_zero("response") |>
-  dplyr::filter(subset == "cd8")
+  dplyr::filter(subset == "cd4")
 data_tidy_vacc_summed
 data_tidy_vacc_profile <- data_tidy_vacc_peak |>
   vacc_calc_response_profile("response") |>
-  dplyr::filter(subset == "cd8")
+  dplyr::filter(subset == "cd4")
 data_tidy_vacc_profile
 ```
 
