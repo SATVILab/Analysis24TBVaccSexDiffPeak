@@ -21,30 +21,21 @@ library(DataTidy24TBVaccSexDiff)
 data("data_tidy_vacc_freq")
 ```
 
-Here we extract the peak response:
+Now we calculate the summed response and the profile response, and then extract the peak response:
 
 ```{r}
-data_tidy_vacc_peak <- data_tidy_vacc_freq |>
-  vacc_extract_peak()
-data_tidy_vacc_peak
-```
-
-Now we calculate the summed response and the peak response:
-
-```{r}
-data_tidy_vacc_summed <- data_tidy_vacc_peak |>
+data_tidy_vacc_summed <- data_tidy_vacc_freq |>
   vacc_calc_response_summed("response") |>
-  #vacc_calc_vaccine_induced_response(cn_resp = "response") |>
+  vacc_calc_vaccine_induced_response("response") |>
   vacc_set_neg_to_zero("response") |>
-  dplyr::filter(subset == "cd4")
+  vacc_extract_peak()
 data_tidy_vacc_summed
-data_tidy_vacc_profile <- data_tidy_vacc_peak |>
+data_tidy_vacc_profile <- data_tidy_vacc_freq |>
   vacc_calc_response_profile("response") |>
-  #vacc_calc_vaccine_induced_response(cn_resp = "response") |>
-  dplyr::filter(subset == "cd4")
+  vacc_calc_vaccine_induced_response("response") |>
+  vacc_extract_peak()
 data_tidy_vacc_profile
 ```
-
 ## Analysis
 
 Kruskal-Wallis Test:
