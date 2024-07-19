@@ -34,11 +34,13 @@ Now we calculate the summed response and the peak response:
 ```{r}
 data_tidy_vacc_summed <- data_tidy_vacc_peak |>
   vacc_calc_response_summed("response") |>
+  #vacc_calc_vaccine_induced_response(cn_resp = "response") |>
   vacc_set_neg_to_zero("response") |>
   dplyr::filter(subset == "cd4")
 data_tidy_vacc_summed
 data_tidy_vacc_profile <- data_tidy_vacc_peak |>
   vacc_calc_response_profile("response") |>
+  #vacc_calc_vaccine_induced_response(cn_resp = "response") |>
   dplyr::filter(subset == "cd4")
 data_tidy_vacc_profile
 ```
@@ -83,12 +85,31 @@ data_tidy_vacc_summed$response <- data_tidy_vacc_summed$response / max(data_tidy
 Fit a Beta Regression Model:
 
 ```{r}
-betareg_model <- betareg(response ~ vaccine + infxn + sex + subset, data = data_tidy_vacc_summed)
-summary(betareg_model)
+betaregunin_model <- betareg(response ~ sex*vaccine, data = data_tidy_vacc_summed|> dplyr::filter(infxn == "uninfected"))
+summary(betaregunin_model)
 
 png(file="beta residuals.png")
-plot(residuals(betareg_model), type = "p",col='red')
+plot(residuals(betaregunin_model), type = "p",col='red')
 dev.off()
+
+betaregin_model <- betareg(response ~ sex*vaccine, data = data_tidy_vacc_summed|> dplyr::filter(infxn == "infected"))
+summary(betaregin_model)
+```
+
+```{r}
+data_tidy_vacc_summed_inf <- data_tidy_vacc_summed |>  dplyr::filter(infxn == "infected") 
+betaregin_model_h1 <- betareg(  response ~ sex,  data = data_tidy_vacc_summed_inf |>    dplyr::filter(vaccine == "h1")) 
+betaregin_model_h56 <- betareg(  response ~ sex,  data = data_tidy_vacc_summed_inf |>    dplyr::filter(vaccine == "h56")) 
+betaregin_model_mva85a <- betareg(  response ~ sex,  data = data_tidy_vacc_summed_inf |>    dplyr::filter(vaccine == "mva85a"))
+
+p_vec <- c(
+  summary(betaregin_model_h1)$coefficients$mean[2, 4],
+  summary(betaregin_model_h56)$coefficients$mean[2, 4],
+  summary(betaregin_model_mva85a)$coefficients$mean[2, 4]
+)
+p_vec
+
+p.adjust(p_vec, method = "holm")
 ```
 
 Load gamlss package:
