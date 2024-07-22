@@ -72,11 +72,11 @@ Boxplot of summed response by sex and infection status:
 boxplot3 <- ggplot(data_tidy_vacc_summed, aes(x = sex, y = response, fill = sex)) +
   geom_boxplot() +
   facet_grid(vaccine ~ infxn) +
-  labs(title = "Summed Response by Sex, Vaccine, and Infection Status", x = "Sex", y = "Summed Response") +
+  labs(title = "Summed Response by Sex and Infection Status", x = "Sex", y = "Summed Response") +
   theme_cowplot()
 
 # Save the plot
-ggsave("Boxplot_of_Summed_Response_by_Sex_Vaccine_and_Infection_Status.png", boxplot3)
+ggsave("Boxplot of Summed Response by Sex and Infection Status.png", boxplot3)
 ```
 
 Perform Mann-Whitney Tests :
@@ -91,24 +91,59 @@ p_values
 p_adjusted <- p.adjust(p_values, method = "bonferroni")
 p_adjusted
 ```
+
+Obtain the square root of the summed response:
+
+```{r}
+data_tidy_vacc_summed <- data_tidy_vacc_summed |>
+  mutate(response_sqrt = sqrt(response))
+```
+
+Boxplot of square root transformed summed responses by sex and infection status:
+
+```{r}
+boxplot4 <- ggplot(data_tidy_vacc_summed, aes(x = sex, y = response_sqrt, fill = sex)) +
+  geom_boxplot() +
+  facet_grid(vaccine ~ infxn) +
+  labs(title = "Square Root of Summed Response by Sex and Infection Status", x = "Sex", y = "Square Root of Summed Response") +
+  theme_cowplot()
+
+# Save the plot
+ggsave("Boxplot of Square Root Summed Response by Sex and Infection Status.png", boxplot4)
+```
+
 Kruskal-Wallis Test:
 
 ```{r}
+library(tidyr)
+library(dplyr)
+library(purrr)
+
 vacc_inf_sex <- with(data_tidy_vacc_summed, interaction(vaccine, infxn, sex))
-test <- kruskal.test(response ~ vacc_inf_sex, data = data_tidy_vacc_summed)
+test <- kruskal.test(response_sqrt ~ vacc_inf_sex, data = data_tidy_vacc_summed)
 test
+
+results <- data_tidy_vacc_summed |>
+  group_by(vaccine, infxn) |>
+  nest() |>
+  mutate(kruskal_test = map(data, ~ kruskal.test(response_sqrt ~ sex, data = .x)),
+         p_value = map_dbl(kruskal_test, "p.value"))
+
+results |>
+  select(vaccine, infxn, p_value)
 ```
 
 Skewness of Responses:
 
 ```{r}
-#install.packages('moments')
-library(moments)
-skewness(data_tidy_vacc_summed$response)
-
-png(file="histogram.png")
-hist(data_tidy_vacc_summed$response, col='blue')
-dev.off()
+histogram1 <- ggplot(data_tidy_vacc_summed, aes(x = response_sqrt)) +
+  geom_histogram(binwidth = 0.05, fill = 'blue', color = 'black', alpha = 0.7) +
+  facet_wrap(~ vaccine) +
+  labs(title = "Histogram of Responses by Vaccine",
+       x = "Square Root of Summed Response",
+       y = "Frequency") +
+  theme_cowplot()
+ggsave('Histogram of skewness of square root of summed responses by vaccine.png',histogram1)     
 ```
 
 Load betareg package:
@@ -120,10 +155,11 @@ Load betareg package:
 library(betareg)
 ```
 
-Transform response to lie between 0 and 1:
+Transform response to lie between 0 and 1 using proportions:
 
 ```{r}
-data_tidy_vacc_summed$response <- data_tidy_vacc_summed$response / max(data_tidy_vacc_summed$response)
+data_tidy_vacc_summed <- data_tidy_vacc_summed %>%
+  mutate(response_proportion = response_sqrt / 100)
 ```
 
 Fit a Beta Regression Model:
