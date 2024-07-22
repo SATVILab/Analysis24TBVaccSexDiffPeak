@@ -162,25 +162,67 @@ data_tidy_vacc_summed <- data_tidy_vacc_summed %>%
   mutate(response_proportion = response_sqrt / 100)
 ```
 
-Fit a Beta Regression Model:
+Fit Beta Regression Model of Uninfected and Infected:
 
 ```{r}
-betaregunin_model <- betareg(response ~ sex*vaccine, data = data_tidy_vacc_summed|> dplyr::filter(infxn == "uninfected"))
-summary(betaregunin_model)
+beta_uninfected <- betareg(response_proportion ~ sex*vaccine, data = data_tidy_vacc_summed|> dplyr::filter(infxn == "uninfected"))
+summary(beta_uninfected)
 
-png(file="beta residuals.png")
-plot(residuals(betaregunin_model), type = "p",col='red')
-dev.off()
-
-betaregin_model <- betareg(response ~ sex*vaccine, data = data_tidy_vacc_summed|> dplyr::filter(infxn == "infected"))
-summary(betaregin_model)
+beta_infected <- betareg(response_proportion ~ sex*vaccine, data = data_tidy_vacc_summed|> 
+dplyr::filter(infxn == "infected"))
+summary(beta_infected)
 ```
 
+Create Residual Plots for the beta regression models of Uninfected and Infected:
+
 ```{r}
-data_tidy_vacc_summed_inf <- data_tidy_vacc_summed |>  dplyr::filter(infxn == "infected") 
-betaregin_model_h1 <- betareg(  response ~ sex,  data = data_tidy_vacc_summed_inf |>    dplyr::filter(vaccine == "h1")) 
-betaregin_model_h56 <- betareg(  response ~ sex,  data = data_tidy_vacc_summed_inf |>    dplyr::filter(vaccine == "h56")) 
-betaregin_model_mva85a <- betareg(  response ~ sex,  data = data_tidy_vacc_summed_inf |>    dplyr::filter(vaccine == "mva85a"))
+#residual plot for beta_uninfected model
+
+data_uninfected <- data_tidy_vacc_summed %>%
+  filter(infxn == "uninfected") %>%
+  mutate(predicted = predict(beta_uninfected, type = "response"),
+         residuals = residuals(beta_uninfected, type = "pearson"))
+
+# Create the residual plot using ggplot2
+beta_residual1 <- ggplot(data_uninfected, aes(x = predicted, y = residuals)) +
+  geom_point() +
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
+  labs(title = "Residual Plot for Beta Regression Model of Uninfected",
+       x = "Predicted Values",
+       y = "Residuals") +
+  theme_cowplot()
+ggsave('Residual Plot for Beta Regression Model of Uninfected.png',beta_residual1)
+
+#residual plot for beta_infected model
+
+data_infected <- data_tidy_vacc_summed |>
+  filter(infxn == "infected") |>
+  mutate(predicted = predict(beta_infected, type = "response"),
+         residuals = response_proportion - predicted)
+
+beta_residual2 <- ggplot(data_infected, aes(x = predicted, y = residuals)) +
+  geom_point() +
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
+  labs(title = "Residual Plot for Beta Regression Model of Infected",
+       x = "Predicted Values",
+       y = "Residuals") +
+  theme_cowplot()
+ggsave('Residual Plot for Beta Regression Model of Infected.png',beta_residual2)
+```
+
+
+```{r}
+data_tidy_vacc_summed_inf <- data_tidy_vacc_summed |>  
+    dplyr::filter(infxn == "infected") 
+
+betaregin_model_h1 <- betareg(  response ~ sex,  data = data_tidy_vacc_summed_inf |>
+    dplyr::filter(vaccine == "h1")) 
+
+betaregin_model_h56 <- betareg(  response ~ sex,  data = data_tidy_vacc_summed_inf |> 
+   dplyr::filter(vaccine == "h56")) 
+
+betaregin_model_mva85a <- betareg(  response ~ sex,  data = data_tidy_vacc_summed_inf |> 
+   dplyr::filter(vaccine == "mva85a"))
 
 p_vec <- c(
   summary(betaregin_model_h1)$coefficients$mean[2, 4],
