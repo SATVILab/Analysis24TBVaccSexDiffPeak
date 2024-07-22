@@ -36,7 +36,46 @@ data_tidy_vacc_profile <- data_tidy_vacc_freq |>
   vacc_extract_peak()
 data_tidy_vacc_profile
 ```
+
 ## Analysis
+
+```{r}
+#install.packages("cowplot")
+library(cowplot)
+```
+
+Boxplot of summed response by infection status:
+
+```{r}
+boxplot1 <- ggplot(data_tidy_vacc_summed, aes(x = infxn, y = response, fill = infxn)) +
+  geom_boxplot() +
+  facet_wrap(~ vaccine)+
+  labs(title = "Summed Response by Infection Status", x = "Infection Status", y = "Summed Response") +
+  theme_cowplot()
+ggsave("Boxplot of Summed Response by Infection Status.png", boxplot1)
+```
+
+Boxplot of summed response by sex:
+
+```{r}
+boxplot2 <- ggplot(data_tidy_vacc_summed, aes(x = sex, y = response, fill = sex)) +
+  geom_boxplot() +
+  facet_wrap(~ vaccine)+
+  labs(title = "Summed Response by Sex", x = "Sex", y = "Summed Response") +
+  theme_cowplot()
+ggsave("Boxplot of Summed Response by Sex.png", boxplot2)
+```
+
+Boxplot of summed response by sex and infection status:
+
+```{r}
+boxplot3 <- ggplot(data_tidy_vacc_summed, aes(x = sex, y = response, fill = sex)) +
+  geom_boxplot() +
+  facet_wrap(~ vaccine + infxn)+
+  labs(title = "Summed Response by Sex and Infection Status", x = "Sex", y = "Summed Response") +
+  theme_cowplot()
+ggsave("Boxplot of Summed Response by Sex and Infection Status.png", boxplot3)
+```
 
 Kruskal-Wallis Test:
 
