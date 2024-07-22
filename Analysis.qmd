@@ -71,12 +71,26 @@ Boxplot of summed response by sex and infection status:
 ```{r}
 boxplot3 <- ggplot(data_tidy_vacc_summed, aes(x = sex, y = response, fill = sex)) +
   geom_boxplot() +
-  facet_wrap(~ vaccine + infxn)+
-  labs(title = "Summed Response by Sex and Infection Status", x = "Sex", y = "Summed Response") +
+  facet_grid(vaccine ~ infxn) +
+  labs(title = "Summed Response by Sex, Vaccine, and Infection Status", x = "Sex", y = "Summed Response") +
   theme_cowplot()
-ggsave("Boxplot of Summed Response by Sex and Infection Status.png", boxplot3)
+
+# Save the plot
+ggsave("Boxplot_of_Summed_Response_by_Sex_Vaccine_and_Infection_Status.png", boxplot3)
 ```
 
+Perform Mann-Whitney Tests :
+
+```{r}
+Mann_Whitney_tests <- list(
+  infxn = wilcox.test(response ~ infxn, data = data_tidy_vacc_summed),
+  sex = wilcox.test(response ~ sex, data = data_tidy_vacc_summed)
+)
+p_values <- sapply(Mann_Whitney_tests, function(test) test$p.value)
+p_values
+p_adjusted <- p.adjust(p_values, method = "bonferroni")
+p_adjusted
+```
 Kruskal-Wallis Test:
 
 ```{r}
