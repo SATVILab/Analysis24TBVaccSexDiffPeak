@@ -36,13 +36,25 @@ data_tidy_vacc_summed <- data_tidy_vacc_freq |>
   vacc_calc_response_summed("response") |>
   vacc_calc_vaccine_induced_response("response") |>
   vacc_set_neg_to_zero("response") |>
-  vacc_extract_peak()
+  vacc_extract_peak() |>
+  dplyr::filter(subset == "cd4")
 data_tidy_vacc_summed
 data_tidy_vacc_profile <- data_tidy_vacc_freq |>
   vacc_calc_response_profile("response") |>
   vacc_calc_vaccine_induced_response("response") |>
   vacc_extract_peak()
 data_tidy_vacc_profile
+```
+
+## Data exploration
+
+### Sample sizes
+
+```{r}
+data_tidy_vacc_summed |>
+  dplyr::group_by(vaccine, prid, sex, timepoint, infxn) |>
+  dplyr::summarise(count = dplyr::n(), .groups = "drop") |>
+  dplyr::arrange(vaccine, prid, infxn, sex)
 ```
 
 ## Analysis
@@ -173,11 +185,16 @@ data_tidy_vacc_summed <- data_tidy_vacc_summed %>%
 Fit Beta Regression Models of Uninfected and Infected to examine the effect of interaction between sex and vaccine on response :
 
 ```{r}
-beta_uninfected <- betareg(response_proportion ~ sex*vaccine, data = data_tidy_vacc_summed|> dplyr::filter(infxn == "uninfected"))
+beta_uninfected <- betareg(
+  response_proportion ~ sex*vaccine,
+  data = data_tidy_vacc_summed|> dplyr::filter(infxn == "uninfected")
+)
 summary(beta_uninfected)
 
-beta_infected <- betareg(response_proportion ~ sex*vaccine, data = data_tidy_vacc_summed|> 
-dplyr::filter(infxn == "infected"))
+beta_infected <- betareg(
+  response_proportion ~ sex*vaccine,
+  data = data_tidy_vacc_summed |> dplyr::filter(infxn == "infected")
+  )
 summary(beta_infected)
 ```
 
