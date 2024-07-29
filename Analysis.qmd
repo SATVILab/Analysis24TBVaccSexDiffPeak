@@ -173,13 +173,15 @@ Load betareg package:
 #install.packages('statmod')
 #install.packages("numDeriv")
 library(betareg)
+library(statmod)
+library(numDeriv)
 ```
 
 Transform response to lie between 0 and 1 using proportions:
 
 ```{r}
 data_tidy_vacc_summed <- data_tidy_vacc_summed %>%
-  mutate(response_proportion = response_sqrt / 100)
+  mutate(response_proportion = sqrt(response / 100))
 ```
 
 Fit Beta Regression Models of Uninfected and Infected to examine the effect of interaction between sex and vaccine on response :
@@ -208,7 +210,6 @@ data_uninfected <- data_tidy_vacc_summed %>%
   mutate(predicted = predict(beta_uninfected, type = "response"),
          residuals = residuals(beta_uninfected, type = "pearson"))
 
-# Create the residual plot using ggplot2
 beta_residual1 <- ggplot(data_uninfected, aes(x = predicted, y = residuals)) +
   geom_point() +
   geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
