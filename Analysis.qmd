@@ -10,6 +10,13 @@ format:
 library(ggplot2)
 library(tibble)
 library(tidyr)
+theme_cowplot_bg <- function() {
+  theme_cowplot() +
+  theme(
+    panel.background = element_rect(fill = "white"),
+    plot.background = element_rect(fill = "white")
+  )
+}
 ```
 
 
@@ -52,7 +59,7 @@ boxplot1 <- ggplot(data_tidy_vacc_summed, aes(x = infxn, y = response, fill = in
   geom_boxplot() +
   facet_wrap(~ vaccine)+
   labs(title = "Summed Response by Infection Status", x = "Infection Status", y = "Summed Response") +
-  theme_cowplot()
+  theme_cowplot_bg()
 ggsave("Boxplot of Summed Response by Infection Status.png", boxplot1)
 ```
 
@@ -63,7 +70,7 @@ boxplot2 <- ggplot(data_tidy_vacc_summed, aes(x = sex, y = response, fill = sex)
   geom_boxplot() +
   facet_wrap(~ vaccine)+
   labs(title = "Summed Response by Sex", x = "Sex", y = "Summed Response") +
-  theme_cowplot()
+  theme_cowplot_bg()
 ggsave("Boxplot of Summed Response by Sex.png", boxplot2)
 ```
 
@@ -74,7 +81,7 @@ boxplot3 <- ggplot(data_tidy_vacc_summed, aes(x = sex, y = response, fill = sex)
   geom_boxplot() +
   facet_grid(vaccine ~ infxn) +
   labs(title = "Summed Response by Sex and Infection Status", x = "Sex", y = "Summed Response") +
-  theme_cowplot()
+  theme_cowplot_bg()
 
 # Save the plot
 ggsave("Boxplot of Summed Response by Sex and Infection Status.png", boxplot3)
@@ -107,7 +114,7 @@ boxplot4 <- ggplot(data_tidy_vacc_summed, aes(x = sex, y = response_sqrt, fill =
   geom_boxplot() +
   facet_grid(vaccine ~ infxn) +
   labs(title = "Square Root of Summed Response by Sex and Infection Status", x = "Sex", y = "Square Root of Summed Response") +
-  theme_cowplot()
+  theme_cowplot_bg() 
 
 # Save the plot
 ggsave("Boxplot of Square Root Summed Response by Sex and Infection Status.png", boxplot4)
@@ -143,7 +150,7 @@ histogram1 <- ggplot(data_tidy_vacc_summed, aes(x = response_sqrt)) +
   labs(title = "Histogram of Responses by Vaccine",
        x = "Square Root of Summed Response",
        y = "Frequency") +
-  theme_cowplot()
+  theme_cowplot_bg()
 ggsave('Histogram of skewness of square root of summed responses by vaccine.png',histogram1)     
 ```
 
@@ -191,7 +198,7 @@ beta_residual1 <- ggplot(data_uninfected, aes(x = predicted, y = residuals)) +
   labs(title = "Residual Plot for Beta Regression Model of Uninfected",
        x = "Predicted Values",
        y = "Residuals") +
-  theme_cowplot()
+  theme_cowplot_bg()
 ggsave('Residual Plot for Beta Regression Model of Uninfected.png',beta_residual1)
 
 #residual plot for beta_infected model
@@ -207,7 +214,7 @@ beta_residual2 <- ggplot(data_infected, aes(x = predicted, y = residuals)) +
   labs(title = "Residual Plot for Beta Regression Model of Infected",
        x = "Predicted Values",
        y = "Residuals") +
-  theme_cowplot()
+  theme_cowplot_bg()
 ggsave('Residual Plot for Beta Regression Model of Infected.png',beta_residual2)
 ```
 
