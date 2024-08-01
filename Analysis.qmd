@@ -324,10 +324,10 @@ library(lmtest)
 Perform Simultaneous Hypothesis Testing for Infected :
 
 ```{r}
-full_model_inf <- betareg(response_proportion ~ sex*vaccine, data = data_tidy_vacc_summed)|>
+full_model_inf <- betareg(response_proportion ~ sex*vaccine, data = data_tidy_vacc_summed|>
                  dplyr::filter(infxn == "infected"))
 
-null_model_inf <- betareg(response_proportion ~ vaccine, data = data_tidy_vacc_summed)|>
+null_model_inf <- betareg(response_proportion ~ vaccine, data = data_tidy_vacc_summed|>
                 dplyr::filter(infxn == "infected"))
 
 summary_full <- summary(full_model_inf)
@@ -349,6 +349,40 @@ likelihood_inf <- lmtest::lrtest(full_model_inf, null_model_inf)
 
 # extract p-values
 p_vec <- c(Wald_inf$`Pr(>Chisq)`[2],likelihood_inf$`Pr(>Chisq)`[2])
+p_vec
+
+# Holm's Correction
+p.adjust(p_vec, method = "holm")
+```
+
+Perform Simultaneous Hypothesis Testing for Uninfected :
+
+```{r}
+full_model_uninf <- betareg(response_proportion ~ sex*vaccine, data = data_tidy_vacc_summed|>
+                 dplyr::filter(infxn == "uninfected"))
+
+null_model_uninf <- betareg(response_proportion ~ vaccine, data = data_tidy_vacc_summed|>
+                dplyr::filter(infxn == "uninfected"))
+
+summary_full_uninf <- summary(full_model_uninf)
+summary_null_uninf <- summary(null_model_uninf)
+
+#extract p-values
+p_vec <- c(mean(summary_full_uninf$coefficients$mu[-1, "Pr(>|z|)"]), 
+           mean(summary_null_uninf$coefficients$mu[-1, "Pr(>|z|)"]))
+p_vec
+
+#Holm's Correction
+p.adjust(p_vec, method = "holm")
+
+# Wald test
+Wald_uninf <- car::linearHypothesis(full_model_uninf, c("sexmale = 0", "sexmale:vaccineh1 = 0","sexmale:vaccineh56 = 0", "sexmale:vaccinemva85a = 0"))
+
+# likelihood ratio test
+likelihood_uninf <- lmtest::lrtest(full_model_uninf, null_model_uninf)
+
+# extract p-values
+p_vec <- c(Wald_uninf$`Pr(>Chisq)`[2],likelihood_uninf$`Pr(>Chisq)`[2])
 p_vec
 
 # Holm's Correction
