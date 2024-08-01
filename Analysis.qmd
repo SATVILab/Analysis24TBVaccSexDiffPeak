@@ -192,19 +192,6 @@ beta_uninfected <- betareg(
   data = data_tidy_vacc_summed|> dplyr::filter(infxn == "uninfected")
 )
 summary(beta_uninfected)
-
-#extract p-values
-p_values <- c(
-  summary(beta_uninfected)$coefficients$mu[, "Pr(>|z|)"],
-  summary(beta_uninfected)$coefficients$phi[, "Pr(>|z|)"],
-  summary(beta_uninfected)$coefficients$nu[, "Pr(>|z|)"]
-)
-p_values
-
-#Holm's procedure
-adjusted_p_values <- p.adjust(p_values, method = "holm")
-adjusted_p_values
-
 ```
 
 Fit Beta Regression Model of Infected to examine the effect of interaction between sex and vaccine on response :
@@ -215,18 +202,6 @@ beta_infected <- betareg(
   data = data_tidy_vacc_summed |> dplyr::filter(infxn == "infected")
   )
 summary(beta_infected)
-
-#Extract p-values
-p_values <- c(
-  summary(beta_infected)$coefficients$mu[, "Pr(>|z|)"],
-  summary(beta_infected)$coefficients$phi[, "Pr(>|z|)"],
-  summary(beta_infected)$coefficients$nu[, "Pr(>|z|)"]
-)
-p_values
-
-#Holm's Procedure
-adjusted_p_values <- p.adjust(p_values, method = "holm")
-adjusted_p_values
 ```
 
 Create Residual Plots for the beta regression models of Uninfected and Infected:
@@ -280,13 +255,15 @@ beta_h56_inf <- betareg( response_proportion ~ sex,  data = data_tidy_vacc_summe
 beta_mva85a_inf <- betareg( response_proportion ~ sex,data = data_tidy_vacc_summed_inf |> 
    dplyr::filter(vaccine == "mva85a"))
 
+#extract p-values
 p_vec <- c(
-  summary(beta_h1_inf)$coefficients$mean[2, 4],
-  summary(beta_h56_inf)$coefficients$mean[2, 4],
-  summary(beta_mva85a_inf)$coefficients$mean[2, 4]
+  mean(summary(beta_h1_inf)$coefficients$mu[-1, "Pr(>|z|)"]),
+  mean(summary(beta_h56_inf)$coefficients$mu[-1, "Pr(>|z|)"],
+  mean(summary(beta_mva85a_inf)$coefficients$mu[-1, "Pr(>|z|)"]
 )
 p_vec
 
+#Holm's Procedure
 p.adjust(p_vec, method = "holm")
 ```
 
@@ -307,6 +284,18 @@ beta_mva85a_uninf<-betareg(response_proportion ~ sex,data =data_tidy_vacc_summed
 
 beta_bcg_uninf <- betareg(response_proportion ~ sex, data =data_tidy_vacc_summed_uninf |> 
    dplyr::filter(vaccine == "bcg"))  
+
+#extract p-values
+p_vec <- c(
+  mean(summary(beta_h1_uninf)$coefficients$mu[-1, "Pr(>|z|)"]),
+  mean(summary(beta_h56_uninf)$coefficients$mu[-1, "Pr(>|z|)"],
+  mean(summary(beta_mva85a_uninf)$coefficients$mu[-1, "Pr(>|z|)"],
+  mean(summary(beta_bcg_uninf)$coefficients$mu[-1, "Pr(>|z|)"]
+)
+p_vec
+
+#Holm's Procedure
+p.adjust(p_vec, method = "holm")
 ```
 
 ```{r}
@@ -394,27 +383,5 @@ Load gamlss package:
 ```{r}
 #install.packages('gamlss')
 library(gamlss)
-```
-
-Fit Gamlss model:
-
-```{r}
-data_tidy_vacc_summed$response <- pmin(pmax(data_tidy_vacc_summed$response, .Machine$double.eps), 1 - .Machine$double.eps)
-
-gamlss_model1 <- gamlss(response ~ vaccine + infxn + sex + subset, data = data_tidy_vacc_summed)
-summary(gamlss_model1)
-
-png(file="gamlss residuals 1.png")
-plot(residuals(gamlss_model1), type = "p",col='red')
-dev.off()
-
-gamlss_model2 <- gamlss(response ~ vaccine + infxn + sex + subset, 
-                sigma.formula = ~ vaccine + infxn + sex + subset, 
-                family = BE(), data = data_tidy_vacc_summed)
-summary(gamlss_model2)
-
-png(file="gamlss residuals 2.png")
-plot(residuals(gamlss_model2), type = "p",col='red')
-dev.off()
 ```
 
