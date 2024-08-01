@@ -42,7 +42,8 @@ data_tidy_vacc_summed
 data_tidy_vacc_profile <- data_tidy_vacc_freq |>
   vacc_calc_response_profile("response") |>
   vacc_calc_vaccine_induced_response("response") |>
-  vacc_extract_peak()
+  vacc_extract_peak() |>
+  dplyr::filter(subset == "cd4")
 data_tidy_vacc_profile
 ```
 
@@ -376,6 +377,23 @@ p_vec
 
 # Holm's Correction
 p.adjust(p_vec, method = "holm")
+```
+
+## Response Profile
+
+Boxplot of Response by Sex and Infection Status 
+
+```{r}
+boxplot1 <- ggplot(data_tidy_vacc_profile, aes(x = sex, y = response, fill = sex)) +
+  geom_boxplot() +
+  facet_grid(vaccine + infxn ~ cyt_combn, scales = "free") +
+  labs(title = "Response by Sex and Infection Status for each Cytokine Combination",
+       x = "Sex",
+       y = "Response") +
+  theme_cowplot_bg() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))    
+
+ggsave('Response by Sex and Infection Status for each CYtokine Combination.png',boxplot1)  
 ```
 
 Load gamlss package:
