@@ -342,7 +342,7 @@ p_vec
 p.adjust(p_vec, method = "holm")
 
 # Wald test
-Wald_inf <- car::linearHypothesis(full_model_inf, c("sexmale = 0", "sexmale:vaccineh1 = 0","sexmale:vaccineh56 = 0", "sexmale:vaccinemva85a = 0"))
+Wald_inf <- car::linearHypothesis(full_model_inf, c("sexmale = 0","sexmale:vaccineh56 = 0", "sexmale:vaccinemva85a = 0"))
 
 # likelihood ratio test
 likelihood_inf <- lmtest::lrtest(full_model_inf, null_model_inf)
@@ -376,7 +376,7 @@ p_vec
 p.adjust(p_vec, method = "holm")
 
 # Wald test
-Wald_uninf <- car::linearHypothesis(full_model_uninf, c("sexmale = 0", "sexmale:vaccineh1 = 0","sexmale:vaccineh56 = 0", "sexmale:vaccinemva85a = 0"))
+Wald_uninf <- car::linearHypothesis(full_model_uninf, c("sexmale = 0","sexmale:vaccineh56 = 0", "sexmale:vaccinemva85a = 0"))
 
 # likelihood ratio test
 likelihood_uninf <- lmtest::lrtest(full_model_uninf, null_model_uninf)
