@@ -180,11 +180,11 @@ library(numDeriv)
 Transform response to lie between 0 and 1 using proportions:
 
 ```{r}
-data_tidy_vacc_summed <- data_tidy_vacc_summed %>%
-  mutate(response_proportion = sqrt(response / 100))
+data_tidy_vacc_summed <- data_tidy_vacc_summed |>
+  dplyr::mutate(response_proportion = sqrt(response / 100))
 ```
 
-Fit Beta Regression Models of Uninfected and Infected to examine the effect of interaction between sex and vaccine on response :
+Fit Beta Regression Model of Uninfected and Infected to examine the effect of interaction between sex and vaccine on response :
 
 ```{r}
 beta_uninfected <- betareg(
@@ -193,11 +193,40 @@ beta_uninfected <- betareg(
 )
 summary(beta_uninfected)
 
+#extract p-values
+p_values <- c(
+  summary(beta_uninfected)$coefficients$mu[, "Pr(>|z|)"],
+  summary(beta_uninfected)$coefficients$phi[, "Pr(>|z|)"],
+  summary(beta_uninfected)$coefficients$nu[, "Pr(>|z|)"]
+)
+p_values
+
+#Holm's procedure
+adjusted_p_values <- p.adjust(p_values, method = "holm")
+adjusted_p_values
+
+```
+
+Fit Beta Regression Model of Infected to examine the effect of interaction between sex and vaccine on response :
+
+```{r}
 beta_infected <- betareg(
   response_proportion ~ sex*vaccine,
   data = data_tidy_vacc_summed |> dplyr::filter(infxn == "infected")
   )
 summary(beta_infected)
+
+#Extract p-values
+p_values <- c(
+  summary(beta_infected)$coefficients$mu[, "Pr(>|z|)"],
+  summary(beta_infected)$coefficients$phi[, "Pr(>|z|)"],
+  summary(beta_infected)$coefficients$nu[, "Pr(>|z|)"]
+)
+p_values
+
+#Holm's Procedure
+adjusted_p_values <- p.adjust(p_values, method = "holm")
+adjusted_p_values
 ```
 
 Create Residual Plots for the beta regression models of Uninfected and Infected:
@@ -278,6 +307,52 @@ beta_mva85a_uninf<-betareg(response_proportion ~ sex,data =data_tidy_vacc_summed
 
 beta_bcg_uninf <- betareg(response_proportion ~ sex, data =data_tidy_vacc_summed_uninf |> 
    dplyr::filter(vaccine == "bcg"))  
+```
+
+```{r}
+pkg_vec <- c("betareg", "car", "lmtest")
+for (x in pkg_vec) {
+  if (!requireNamespace(x, quietly = TRUE)) {
+    renv::install(x, prompt = FALSE)
+  }
+}
+library(betareg)
+library(car)
+library(lmtest)
+```
+
+Perform Simultaneous Hypothesis Testing for Infected :
+
+```{r}
+full_model_inf <- betareg(response_proportion ~ sex*vaccine, data = data_tidy_vacc_summed)|>
+                 dplyr::filter(infxn == "infected"))
+
+null_model_inf <- betareg(response_proportion ~ vaccine, data = data_tidy_vacc_summed)|>
+                dplyr::filter(infxn == "infected"))
+
+summary_full <- summary(full_model_inf)
+summary_null <- summary(null_model_inf)
+
+#extract p-values
+p_vec <- c(mean(summary_full$coefficients$mu[-1, "Pr(>|z|)"]), 
+           mean(summary_null$coefficients$mu[-1, "Pr(>|z|)"]))
+p_vec
+
+#Holm's Correction
+p.adjust(p_vec, method = "holm")
+
+# Wald test
+Wald_inf <- car::linearHypothesis(full_model_inf, c("sexmale = 0", "sexmale:vaccineh1 = 0","sexmale:vaccineh56 = 0", "sexmale:vaccinemva85a = 0"))
+
+# likelihood ratio test
+likelihood_inf <- lmtest::lrtest(full_model_inf, null_model_inf)
+
+# extract p-values
+p_vec <- c(Wald_inf$`Pr(>Chisq)`[2],likelihood_inf$`Pr(>Chisq)`[2])
+p_vec
+
+# Holm's Correction
+p.adjust(p_vec, method = "holm")
 ```
 
 Load gamlss package:
