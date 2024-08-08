@@ -396,10 +396,42 @@ boxplot1 <- ggplot(data_tidy_vacc_profile, aes(x = sex, y = response, fill = sex
 ggsave('Response by Sex and Infection Status for each CYtokine Combination.png',boxplot1)  
 ```
 
-Load gamlss package:
+PCA Biplot
 
 ```{r}
-#install.packages('gamlss')
-library(gamlss)
-```
+#create a wide format where each cytokine combination is a separate column
+profile_wide <- data_tidy_vacc_profile |>
+  tidyr::pivot_wider(names_from = cyt_combn, values_from = response)
 
+# Select only the cytokine combination columns for PCA
+cytokine_cols <- colnames(profile_wide)[grepl("\\+", colnames(profile_wide))]
+pca_result <- prcomp(profile_wide[, cytokine_cols], scale. = TRUE)  
+
+# combine PCA results with the original metadata
+pca_data <- as.data.frame(pca_result$x) |>
+  dplyr::bind_cols(profile_wide |>
+  dplyr::select(vaccine, sex, infxn))
+
+# extract PCA loadings
+loadings <- as.data.frame(pca_result$rotation[, 1:2]) # Take only the first two PCs
+loadings$cyt_combn <- rownames(loadings) # Add cytokine combination names
+
+# scaling factor for arrows
+arrow_scale <- 8.5  
+
+# scale PCA loadings for arrows
+scaled_loadings <- loadings |>
+  dplyr::mutate(PC1 = PC1 * arrow_scale,
+         PC2 = PC2 * arrow_scale)
+
+# plot the PCA 
+pca_plot <- ggplot(pca_data, aes(x = PC1, y = PC2, color = vaccine, shape = sex)) +
+  geom_point(size = 3) +
+  facet_wrap(~ infxn) +
+  labs(title = "PCA Biplot", x = "PC1", y = "PC2") + 
+  geom_segment(data = scaled_loadings, aes(x = 0, y = 0, xend = PC1, yend = PC2), 
+               arrow = arrow(length = unit(0.3, "cm")), color = "red", inherit.aes = FALSE) +
+  geom_text(data = scaled_loadings, aes(x = PC1, y = PC2, label = cyt_combn), nudge_x = 1.5, nudge_y = 0.4, vjust = 1, hjust = 1, color = "red", inherit.aes = FALSE) +
+  theme_cowplot_bg()  #
+ggsave('PCA_Biplot.png', pca_plot, width = 12, height = 6)
+```
