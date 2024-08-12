@@ -109,7 +109,7 @@ Mann_Whitney_tests <- list(
 )
 p_values <- sapply(Mann_Whitney_tests, function(test) test$p.value)
 p_values
-p_adjusted <- p.adjust(p_values, method = "bonferroni")
+p_adjusted <- p.adjust(p_values, method = "holm")
 p_adjusted
 ```
 
