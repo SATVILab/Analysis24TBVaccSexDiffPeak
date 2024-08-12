@@ -450,14 +450,14 @@ mean_positions <- mean_positions %>%
   dplyr::mutate(combo = paste(vaccine, sex, sep = "-"))
 
 pca_plot2 <- ggplot(pca_data, aes(x = PC1, y = PC2, color = vaccine, shape = sex)) +
-  geom_point(size = 3) +
   facet_wrap(~ infxn) +
   labs(title = "PCA Biplot with Mean Positions", x = "PC1", y = "PC2") + 
   geom_segment(data = scaled_loadings, aes(x = 0, y = 0, xend = PC1, yend = PC2), 
-               arrow = arrow(length = unit(0.3, "cm")), color = "red", inherit.aes = FALSE) +
+               arrow = arrow(length = unit(0.3, "cm")), color = "black", inherit.aes = FALSE) +
   geom_text(data = scaled_loadings, aes(x = PC1, y = PC2, label = cyt_combn), 
-            nudge_x = 1.5, nudge_y = 0.4, vjust = 1, hjust = 1, color = "red", 
+            nudge_x = 1.5, nudge_y = 0.4, vjust = 1, hjust = 1, color = "black", 
             inherit.aes = FALSE) +
+  geom_point(size = 3) +          
   geom_point(data = mean_positions, aes(x = PC1, y = PC2), shape=1,fill=NA,
              size = 4, color = "orange",stroke=1.5) +
   ggrepel::geom_text_repel(data = mean_positions, aes(x = PC1, y = PC2, label = combo), 
