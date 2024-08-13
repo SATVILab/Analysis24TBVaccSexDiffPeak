@@ -109,7 +109,9 @@ Mann_Whitney_tests <- list(
 )
 p_values <- sapply(Mann_Whitney_tests, function(test) test$p.value)
 p_values
-p_adjusted <- p.adjust(p_values, method = "holm")
+
+# Apply Benjamini-Hochberg correction
+p_adjusted <- p.adjust(p_values, method = "BH")
 p_adjusted
 ```
 
