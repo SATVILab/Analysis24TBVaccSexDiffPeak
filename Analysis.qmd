@@ -67,8 +67,8 @@ library(cowplot)
 
 Table of data:
 ```{r}
-knitr::kable(data_tidy_vacc_freq[1:5,])
-
+knitr::kable(data_tidy_vacc_freq|>dplyr::filter(ptid=='bcg-040-21' & subset=='cd4'& timepoint=="70"))
+knitr::kable(data_tidy_vacc_summed|>dplyr::filter(ptid=='bcg-040-21'))
 ```
 
 
@@ -243,6 +243,13 @@ beta_infected <- betareg(
   response_proportion ~ sex*vaccine,
   data = data_tidy_vacc_summed |> dplyr::filter(infxn == "infected")
   )
+
+beta_infected <- betareg(
+  prop_response ~ vaccine*sex,
+  data_tidy_vacc_summed |> 
+    dplyr::filter(infxn =="infected") |>
+    dplyr::mutate(vaccine = factor(.data$vaccine, levels = c("h56", "h1", "mva85a"))))
+
 summary(beta_infected)
 ```
 
