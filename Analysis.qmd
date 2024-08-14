@@ -107,12 +107,32 @@ Mann_Whitney_tests <- list(
   infxn = wilcox.test(response ~ infxn, data = data_tidy_vacc_summed),
   sex = wilcox.test(response ~ sex, data = data_tidy_vacc_summed)
 )
-p_values <- sapply(Mann_Whitney_tests, function(test) test$p.value)
-p_values
 
-# Apply Benjamini-Hochberg correction
-p_adjusted <- p.adjust(p_values, method = "BH")
-p_adjusted
+mw_tbl_summed <- purrr::map_df(unique(data_tidy_vacc_summed$infxn), function(infxn) {
+  data_tidy_vacc_sub <- data_tidy_vacc_summed |>
+    dplyr::filter(infxn == .env$infxn)
+  purrr::map_df(unique(data_tidy_vacc_sub$vaccine), function(vaccine) {
+    data_tidy_vacc_sub_sub <- data_tidy_vacc_sub |>
+      dplyr::filter(vaccine == .env$vaccine)
+    # browser()
+    resp_vec_male <- data_tidy_vacc_sub_sub |>
+      dplyr::filter(sex == "male") |>
+      dplyr::pull(response)
+    resp_vec_female <- data_tidy_vacc_sub_sub |>
+      dplyr::filter(sex == "female") |>
+      dplyr::pull(response)
+    p_val <- wilcox.test(resp_vec_male, resp_vec_female)$p.value
+    tibble::tibble(
+      infxn = infxn, vaccine = vaccine, p_val = p_val
+    )
+  })
+})
+
+mw_tbl_summed <- mw_tbl_summed |>
+  dplyr::group_by(infxn) |>
+  dplyr::mutate(q_val = p.adjust(p_val, method = "holm")) |>
+  dplyr::ungroup()
+mw_tbl_summed
 ```
 
 Obtain the square root of the summed response:
