@@ -65,6 +65,13 @@ data_tidy_vacc_summed |>
 library(cowplot)
 ```
 
+Table of data:
+```{r}
+knitr::kable(data_tidy_vacc_freq[1:5,])
+
+```
+
+
 Boxplot of summed response by infection status:
 
 ```{r}
@@ -92,12 +99,24 @@ Boxplot of summed response by sex and infection status:
 ```{r}
 boxplot3 <- ggplot(data_tidy_vacc_summed, aes(x = sex, y = response, fill = sex)) +
   geom_boxplot() +
-  facet_grid(vaccine ~ infxn) +
+  facet_grid(vaccine ~ infxn,labeller = labeller(vaccine = toupper)) +
   labs(title = "Summed Response by Sex and Infection Status", x = "Sex", y = "Summed Response") +
-  theme_cowplot_bg()
+  theme(
+    axis.text.x = element_blank(),        # Remove x-axis text
+    axis.ticks.x = element_blank(),       # Remove x-axis ticks
+    panel.grid.major.x = element_blank(), # Optionally remove major x-axis grid lines
+    panel.grid.minor.x = element_blank(), # Optionally remove minor x-axis grid lines
+    legend.position = 'bottom',
+     strip.text = element_text(size = 12,  # Adjust facet label size
+    face = "bold"),
+    axis.text.y = element_text(size = 13,   # Adjust y-axis title size
+    face = "bold"),
+    legend.text = element_text(size = 12) ) + # Set y-axis title font style             # Place legend at the bottom                   
+      
+  guides(fill = guide_legend(title = NULL))
 
 # Save the plot
-ggsave("Boxplot of Summed Response by Sex and Infection Status.png", boxplot3)
+ggsave("Boxplot of Summed Response by Sex and Infection Status.png",boxplot3)
 ```
 
 Perform Mann-Whitney Tests :
