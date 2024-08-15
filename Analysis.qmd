@@ -535,22 +535,22 @@ mean_positions <- mean_positions %>%
 pca_plot2 <- ggplot(pca_data|>dplyr::filter(infxn=='infected'), aes(x = PC1, y = PC2, color = vaccine, shape = sex)) +
   labs(title = "PCA Biplot with Mean Positions", 
        x = paste0("PC1 (", pc1_var, ")"), 
-       y = paste0("PC2 (", pc2_var, ")")) +     
+       y = paste0("PC2 (", pc2_var, ")")) +
   geom_segment(data = scaled_loadings, aes(x = 0, y = 0, xend = PC1, yend = PC2), 
                arrow = arrow(length = unit(0.3, "cm")), color = "black", inherit.aes = FALSE) +
   geom_text(data = scaled_loadings, aes(x = PC1, y = PC2, label = cyt_combn), 
             nudge_x = 1.5, nudge_y = 0.4, vjust = 1, hjust = 1, color = "black", 
             inherit.aes = FALSE) +
   geom_point(size = 3) +          
-  geom_point(data = mean_positions, aes(x = PC1, y = PC2), shape=1,fill=NA,
-             size = 4, color = 'orange',stroke=1.5) +
+  geom_point(data = mean_positions, aes(x = PC1, y = PC2, color = vaccine), 
+             shape=1, fill=NA, size = 4, stroke=1.5) +
   ggrepel::geom_text_repel(data = mean_positions, aes(x = PC1, y = PC2, label = combo), 
             nudge_x = 1, nudge_y = 0.5, vjust = 1, hjust = 1, color = "black") +
-  theme_cowplot_bg()+
+  theme_cowplot_bg()+ 
   theme(axis.text.x = element_blank(),        # Remove x-axis text
     axis.ticks.x = element_blank())
 
-ggsave('PCA Biplot_mean_positions.png', pca_plot2, width = 10, height = 6)   
+ggsave('PCA Biplot_mean_positions.png', pca_plot2,width =10, height=6)   
 ```
 
 PCA biplot with ellipses:
