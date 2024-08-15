@@ -113,7 +113,7 @@ boxplot3 <- ggplot(data_tidy_vacc_summed, aes(x = sex, y = response, fill = sex)
     axis.text.y = element_text(size = 13,   # Adjust y-axis title size
     face = "bold"),
     legend.text = element_text(size = 12) ) + # Set y-axis title font style             # Place legend at the bottom                   
-      
+    background_grid(major='y')+
   guides(fill = guide_legend(title = NULL))
 
 # Save the plot
