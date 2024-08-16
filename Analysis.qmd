@@ -52,10 +52,12 @@ data_tidy_vacc_profile
 ### Sample sizes
 
 ```{r}
-data_tidy_vacc_summed |>
-  dplyr::group_by(vaccine, prid, sex, timepoint, infxn) |>
+knitr::kable(data_tidy_vacc_summed |>
+  dplyr::mutate(vaccine = stringr::str_to_upper(vaccine)) %>%
+  dplyr::group_by(vaccine, sex, timepoint, infxn) |>
   dplyr::summarise(count = dplyr::n(), .groups = "drop") |>
-  dplyr::arrange(vaccine, prid, infxn, sex)
+  dplyr::rename(Vaccine = vaccine, Sex = sex,Timepoint = timepoint,Infxn = infxn,Count = count)|>
+  dplyr::arrange(Vaccine, Infxn, Sex))
 ```
 
 ## Analysis
