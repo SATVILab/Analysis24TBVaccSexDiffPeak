@@ -426,8 +426,57 @@ library(lmtest)
 Perform Simultaneous Hypothesis Testing for Infected :
 
 ```{r}
-full_model_inf <- betareg(response_proportion ~ sex*vaccine, data = data_tidy_vacc_summed|>
-                 dplyr::filter(infxn == "infected"))
+full_model_inf <- betareg(response_proportion ~ vaccine*sex, data_tidy_vacc_summed |> 
+    dplyr::filter(infxn =="infected") |>
+    dplyr::mutate(vaccine = factor(.data$vaccine, levels = c("h56", "h1", "mva85a"))))
+
+#for table for presentation slides:estimates of effects sizes and their CI
+# Extract coefficients and confidence intervals
+coef_summary <- summary(full_model_inf)
+coef_estimates <- coef_summary$coefficients$mu[, "Estimate"]
+conf_intervals <- confint(full_model_inf)
+
+# Create a data frame for plotting
+plot_data <- data.frame(
+  Vaccine = c("H56", "H1", "MVA85A"),
+  Estimate = c(coef_estimates["sexmale"],  # For H56
+    coef_estimates["sexmale"] + coef_estimates["vaccineh1:sexmale"],  # For H1
+    coef_estimates["sexmale"] + coef_estimates["vaccinemva85a:sexmale"]  # For MVA85A
+  ),
+  CI_Lower = c(conf_intervals["sexmale", "2.5 %"],  # For H56
+    conf_intervals["sexmale", "2.5 %"] + conf_intervals["vaccineh1:sexmale", "2.5 %"],  # For H1
+    conf_intervals["sexmale", "2.5 %"] + conf_intervals["vaccinemva85a:sexmale", "2.5 %"]  # For MVA85A
+  ),
+  CI_Upper = c(
+    conf_intervals["sexmale", "97.5 %"],  # For H56
+    conf_intervals["sexmale", "97.5 %"] + conf_intervals["vaccineh1:sexmale", "97.5 %"],  # For H1
+    conf_intervals["sexmale", "97.5 %"] + conf_intervals["vaccinemva85a:sexmale", "97.5 %"]  # For MVA85A
+  ),
+
+  Color = c("H56", "H1", "MVA85A")              
+)
+
+# Plot the effect sizes with confidence intervals
+plot_infected2<-ggplot(plot_data, aes(x = Vaccine, y = Estimate, ymin = CI_Lower, ymax = CI_Upper,color=Color)) +
+  geom_pointrange() +
+  labs(
+    x = NULL,
+    y = "Estimate",
+    caption = "Error bars represent 95% confidence intervals"
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  geom_errorbar(aes(ymin = CI_Lower, ymax = CI_Upper), width = 0.1) +
+  theme_cowplot_bg()+
+  scale_color_manual(values = c("H56" = "red", 
+                                "H1" = "blue", 
+                                "MVA85A" = "purple"))+
+  theme(axis.text.x = element_blank(),        # Remove x-axis text
+    axis.ticks.x = element_blank(),
+    legend.position = 'bottom')+   
+  background_grid(major='y')+
+  guides(color = guide_legend(title = NULL))                              
+
+ggsave('Table of estimates of effect sizes and CI.png',plot_infected2,width = 10, height = 6)
 
 null_model_inf <- betareg(response_proportion ~ vaccine, data = data_tidy_vacc_summed|>
                 dplyr::filter(infxn == "infected"))
@@ -462,6 +511,7 @@ Perform Simultaneous Hypothesis Testing for Uninfected :
 ```{r}
 full_model_uninf <- betareg(response_proportion ~ sex*vaccine, data = data_tidy_vacc_summed|>
                  dplyr::filter(infxn == "uninfected"))
+​
 
 null_model_uninf <- betareg(response_proportion ~ vaccine, data = data_tidy_vacc_summed|>
                 dplyr::filter(infxn == "uninfected"))
