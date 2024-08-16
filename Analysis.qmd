@@ -252,6 +252,61 @@ beta_infected <- betareg(
     dplyr::mutate(vaccine = factor(.data$vaccine, levels = c("h56", "h1", "mva85a"))))
 
 summary(beta_infected)
+
+#for table for presentation slides:estimates of effects sizes and their CI
+
+# Extract coefficients and confidence intervals
+coef_summary <- summary(beta_infected)
+coef_estimates <- coef_summary$coefficients$mu[, "Estimate"]
+coef_se <- coef_summary$coefficients$mu[, "Std. Error"]
+conf_intervals <- confint(beta_infected)
+
+# Create a data frame for plotting
+plot_data <- data.frame(
+  Term = c("Reference (H56:Female)", "H1", "MVA85A", "H1:Male", "MVA85A:Male"),
+  Estimate = c(coef_estimates["sexmale"], 
+                coef_estimates["vaccineh1"], 
+                coef_estimates["vaccinemva85a"], 
+                coef_estimates["vaccineh1:sexmale"], 
+                coef_estimates["vaccinemva85a:sexmale"]),
+  CI_Lower = c(conf_intervals["sexmale", "2.5 %"], 
+                conf_intervals["vaccineh1", "2.5 %"], 
+                conf_intervals["vaccinemva85a", "2.5 %"], 
+                conf_intervals["vaccineh1:sexmale", "2.5 %"], 
+                conf_intervals["vaccinemva85a:sexmale", "2.5 %"]),
+  CI_Upper = c(conf_intervals["sexmale", "97.5 %"], 
+                conf_intervals["vaccineh1", "97.5 %"], 
+                conf_intervals["vaccinemva85a", "97.5 %"], 
+                conf_intervals["vaccineh1:sexmale", "97.5 %"], 
+                conf_intervals["vaccinemva85a:sexmale", "97.5 %"]),
+  Color = c("Reference (H56:Female)", "H1", "MVA85A", "H1:Male", "MVA85A:Male")              
+)
+
+# Plot the effect sizes with confidence intervals
+plot_infected2<-ggplot(plot_data, aes(x = Term, y = Estimate, ymin = CI_Lower, ymax = CI_Upper,color=Color)) +
+  geom_pointrange() +
+  theme_minimal() +
+  labs(
+    title = "Effect of Sex and Interaction Terms on Response Proportion by Vaccine",
+    x = NULL,
+    y = "Estimate",
+    caption = "Error bars represent 95% confidence intervals"
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  geom_errorbar(aes(ymin = CI_Lower, ymax = CI_Upper), width = 0.1) +
+  theme_cowplot_bg()+
+  scale_color_manual(values = c("Reference (H56:Female)" = "blue", 
+                                "H1" = "green", 
+                                "MVA85A" = "purple", 
+                                "H1:Male" = "orange", 
+                                "MVA85A:Male" = "red"))+
+  theme(axis.text.x = element_blank(),        # Remove x-axis text
+    axis.ticks.x = element_blank(),
+    legend.position = 'bottom')+   
+  background_grid(major='y')+
+  guides(color = guide_legend(title = NULL))                              
+
+ggsave('Table of estimates of effect sizes and CI.png',plot_infected2,width = 10, height = 6)
 ```
 
 Create Residual Plots for the beta regression models of Uninfected and Infected:
