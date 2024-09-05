@@ -43,6 +43,7 @@ data_tidy_vacc_summed
 data_tidy_vacc_profile <- data_tidy_vacc_freq |>
   vacc_calc_response_profile("response") |>
   vacc_calc_vaccine_induced_response("response") |>
+  vacc_set_neg_to_zero("response") |>
   vacc_extract_peak() |>
   dplyr::filter(subset == "cd4")
 data_tidy_vacc_profile
@@ -635,6 +636,7 @@ boxplot1 <- ggplot(data_tidy_vacc_profile, aes(x = sex, y = response, fill = sex
 
 ggsave('Response by Sex and Infection Status for each CYtokine Combination.png',boxplot1)  
 
+
  #subset boxplot filtering 2 vaccines
 selected_vaccines <- c('h1', 'mva85a')
 
@@ -779,4 +781,40 @@ pca_plot4 <- ggplot(pca_data, aes(x = PC1, y = PC2, color = sex_vaccine)) +
   theme(legend.position = "right")
 
 ggsave('PCA_biplot_ellipses_vaccine_sex.png', pca_plot4, width = 12, height = 6)
+```
+
+Analysis of Response Profile:
+
+Transform response to lie between 0 and 1 using proportions:
+```{r}
+data_tidy_vacc_profile <- data_tidy_vacc_profile |>
+  dplyr::mutate(response_proportion = sqrt(response / 100))
+```
+
+Identify individuals for which the sum of absolute changes from pre-vaccination(vaccine-induced summed response) was 0.02 or more:
+```{r}
+participant_ids <- data_tidy_vacc_summed %>%
+  filter(response >= 0.02) %>%
+  pull(ptid)
+```
+
+Fit beta regression model for infected individuals with interaction term
+```{r}
+library(betareg)
+library(statmod)
+library(numDeriv)
+
+full_model_inf <- betareg(response_proportion ~ sex * vaccine * cyt_combn, data = data_tidy_vacc_profile|>
+                  dplyr::filter(infxn =="infected"))
+
+summary(full_model_inf)
+```
+
+Fit beta regression model for uninfected individuals with interaction term
+```{r}
+full_model_uninf <- betareg(response_proportion ~ sex * vaccine * cyt_combn, data = data_tidy_vacc_profile|>
+                  dplyr::filter(ptid %in% participant_ids)|>
+                  dplyr::filter(infxn =="uninfected"))
+
+summary(full_model_uninf)
 ```
