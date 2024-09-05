@@ -39,12 +39,33 @@ data_tidy_vacc_summed <- data_tidy_vacc_freq |>
   vacc_extract_peak() |>
   dplyr::filter(subset == "cd4")
 data_tidy_vacc_summed
+
 data_tidy_vacc_profile <- data_tidy_vacc_freq |>
   vacc_calc_response_profile("response") |>
   vacc_calc_vaccine_induced_response("response") |>
   vacc_extract_peak() |>
   dplyr::filter(subset == "cd4")
 data_tidy_vacc_profile
+
+data_tidy_vacc_raw_profile <- data_tidy_vacc_freq |>
+  vacc_calc_response_profile(cn_resp = "response")|>
+  vacc_extract_peak()
+
+data_tidy_vacc_vi_profile <- data_tidy_vacc_freq |>
+  vacc_calc_vaccine_induced_response(cn_resp = "response") |>
+  vacc_calc_response_profile(cn_resp = "response")|>
+  vacc_extract_peak()
+
+data_tidy_vacc_raw_fds_prop <- data_tidy_vacc_freq |>
+  vacc_calc_fds_prop(cn_resp = "response")|>
+  vacc_extract_peak() |>
+  dplyr::filter(subset == "cd4")
+
+data_tidy_vacc_vi_fds_prop <-  data_tidy_vacc_freq |>
+  vacc_calc_vaccine_induced_response(cn_resp = "response") |>
+  vacc_calc_fds_prop(cn_resp = "response")
+  vacc_extract_peak() |>
+  dplyr::filter(subset == "cd4")
 ```
 
 ## Data exploration
