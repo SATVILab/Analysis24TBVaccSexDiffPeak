@@ -10,6 +10,7 @@ format:
 library(ggplot2)
 library(tibble)
 library(tidyr)
+library(dplyr)
 theme_cowplot_bg <- function() {
   theme_cowplot() +
   theme(
@@ -39,6 +40,14 @@ data_tidy_vacc_profile <- data_tidy_vacc_freq |>
   dplyr::filter(subset == "cd4") |>
   dplyr::filter(vaccine %in% c("h1", "m72"))
 data_tidy_vacc_profile
+
+data_tidy_vacc_summed <- data_tidy_vacc_freq |>
+  vacc_calc_response_summed("response") |>
+  vacc_calc_vaccine_induced_response("response") |>
+  vacc_set_neg_to_zero("response") |>
+  vacc_extract_peak() |>
+  dplyr::filter(subset == "cd4")
+data_tidy_vacc_summed
 ```
 
 Boxplot of Response by Sex and Infection Status 
@@ -204,18 +213,76 @@ ggsave('PCA_biplot_ellipses_vaccine_sex.png', pca_plot4, width = 12, height = 6)
 
 ## Analysis of Response Profile:
 
-Transform response to lie between 0 and 1 using proportions:
-```{r}
-data_tidy_vacc_profile <- data_tidy_vacc_profile |>
-  dplyr::mutate(response = pmax(0, response)) |> 
-  dplyr::mutate(response_proportion = sqrt(response / 100) + 1e-6)
-```
-
 Identify individuals for which the sum of absolute changes from pre-vaccination(vaccine-induced summed response) was 0.02 or more:
 ```{r}
 participant_ids <- data_tidy_vacc_summed %>%
   filter(response >= 0.02) %>%
   pull(ptid)
+```
+
+## Linear Models
+Fit linear models for each vaccine to assess the effect of sex on the immune response profile for infected individuals:
+
+```{r}
+# Filter data to include only infected individuals
+# Convert `sex` to a factor for modeling
+inf_data <- data_tidy_vacc_profile %>%
+  filter(ptid %in% participant_ids)|>
+  filter(infxn == "infected") %>%
+  mutate(sex = factor(sex, levels = c("male", "female")))
+
+# Split data by vaccine
+vaccine_inf <- inf_data %>%
+  group_by(vaccine) %>%
+  group_split()
+
+# Initialize list to store models
+lm_inf <- list()
+
+# Loop through each vaccine group, fit LM and store results
+for (group in vaccine_inf) {
+  vaccine <- unique(group$vaccine)
+  model <- lm(response ~ sex, data = group)
+  lm_inf[[vaccine]] <- model
+}
+summary(lm_inf[['h1']])
+summary(lm_inf[['m72']])
+```
+
+Fit linear models for each vaccine to assess the effect of sex on the immune response profile for uninfected individuals:
+
+```{r}
+# Filter data to include only uninfected individuals
+# Convert `sex` to a factor for modeling
+uninf_data <- data_tidy_vacc_profile %>%
+  filter(ptid %in% participant_ids)|>
+  filter(infxn == "uninfected") %>%
+  mutate(sex = factor(sex, levels = c("male", "female")))
+
+# Split data by vaccine
+vaccine_uninf <- uninf_data %>%
+  group_by(vaccine) %>%
+  group_split()
+
+# Initialize list to store models
+lm_uninf <- list()
+
+# Loop through each vaccine group, fit LM and store results
+for (group in vaccine_uninf) {
+  vaccine <- unique(group$vaccine)
+  model <- lm(response ~ sex, data = group)
+  lm_uninf[[vaccine]] <- model
+}
+summary(lm_uninf[['h1']])
+summary(lm_uninf[['m72']])
+```
+
+## Beta Regression Models
+Transform response to lie between 0 and 1 using proportions:
+```{r}
+data_tidy_vacc_profile <- data_tidy_vacc_profile |>
+  dplyr::mutate(response = pmax(0, response)) |> 
+  dplyr::mutate(response_proportion = sqrt(response / 100) + 1e-6)
 ```
 
 Fit beta regression model for infected individuals with interaction term
@@ -245,31 +312,6 @@ beta_models_inf1 <- map(cytokine_splits, function(data) {
 beta_models_inf1
 ```
 
-Fit the models excluding the mva85a and h56 vaccines due to small sample sizes
-
-```{r}
-#full_model_inf2 <- betareg(response_proportion ~ sex * vaccine * cyt_combn, data = data_tidy_vacc_profile|>
-#                            dplyr::filter(ptid %in% participant_ids)|>
-#                           dplyr::filter(infxn =="infected"))|>
-#                            filter(!vaccine %in% c("mva85a", "h56"))
-
-#summary(full_model_inf2)
-
-#cytokine_splits <- data_tidy_vacc_profile %>%
-#  filter(ptid %in% participant_ids) %>%
-#  filter(infxn == "infected") %>%
-#  filter(!vaccine %in% c("mva85a", "h56")) %>%  # Exclude specific vaccines
-#  split(.$cyt_combn)
-
-# Fit beta regression model for each cytokine combination
-#beta_models_inf2 <- map(cytokine_splits, function(data) {
-#  betareg(response_proportion ~ sex * vaccine, data = data)
-#})
-#beta_models_inf2
-
-```
-
-
 Fit beta regression model for uninfected individuals with interaction term
 ```{r}
 full_model_uninf1 <- betareg(response_proportion ~ sex * vaccine * cyt_combn, data = data_tidy_vacc_profile|>
@@ -290,3 +332,4 @@ beta_models_uninf1 <- map(cytokine_splits, function(data) {
 })
 beta_models_uninf1
 ```
+
