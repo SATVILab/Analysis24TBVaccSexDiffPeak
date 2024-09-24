@@ -91,9 +91,14 @@ ggsave('Response by Sex and Infection Status for each CYtokine Combination.png',
 
 ## PCA Biplot
 
+For Uninfected Individuals(included only 'g+2+t+','g-2+t+' and 'g-2+t-' cytokine combinations 
+as per Rodo(2019)):
+
 ```{r}
 #create a wide format where each cytokine combination is a separate column
 profile_wide <- data_tidy_vacc_profile |>
+# Filter for uninfected individuals and specific cytokine combinations
+  filter(infxn == "uninfected" & cyt_combn %in% c("g+2+t+", "g-2+t+", "g-2+t-")) %>%
   tidyr::pivot_wider(names_from = cyt_combn, values_from = response)
 
 # Select only the cytokine combination columns for PCA
@@ -123,21 +128,21 @@ pc1_var <- scales::percent(pca_var_explained[1])
 pc2_var <- scales::percent(pca_var_explained[2])
 ```
 
-Plot the PCA Biplot:
+Plot the PCA Biplot for Uninfected Individuals:
 
 ```{r}
 pca_plot1 <- ggplot(pca_data, aes(x = PC1, y = PC2, color = vaccine, shape = sex)) +
   geom_point(size = 3) +
-  facet_wrap(~ infxn) +
+  #facet_wrap(~ infxn) +
   labs(title = "PCA Biplot", x = "PC1", y = "PC2") + 
   geom_segment(data = scaled_loadings, aes(x = 0, y = 0, xend = PC1, yend = PC2), 
                arrow = arrow(length = unit(0.3, "cm")), color = "red", inherit.aes = FALSE) +
   geom_text(data = scaled_loadings, aes(x = PC1, y = PC2, label = cyt_combn), nudge_x = 1.5, nudge_y = 0.4, vjust = 1, hjust = 1, color = "red", inherit.aes = FALSE) +
   theme_cowplot_bg()  
-ggsave('PCA_Biplot.png', pca_plot1, width = 12, height = 6)
+ggsave('PCA_Biplot_uninf.png', pca_plot1, width = 12, height = 6)
 ```
 
-PCA biplot with mean positions shown for each vaccine sex combo:
+PCA biplot with mean positions shown for each vaccine sex combo for uninfected Individuals:
 ```{r}
 # calculate mean positions for each vaccine and sex combination
 mean_positions <- pca_data %>%
@@ -147,7 +152,7 @@ mean_positions <- pca_data %>%
 mean_positions <- mean_positions %>%
   dplyr::mutate(combo = paste(vaccine, sex, sep = "-"))
 
-pca_plot2 <- ggplot(pca_data|>dplyr::filter(infxn=='infected'), aes(x = PC1, y = PC2, color = vaccine, shape = sex)) +
+pca_plot2 <- ggplot(pca_data, aes(x = PC1, y = PC2, color = vaccine, shape = sex)) +
   labs(title = "PCA Biplot with Mean Positions", 
        x = paste0("PC1 (", pc1_var, ")"), 
        y = paste0("PC2 (", pc2_var, ")")) +
@@ -165,7 +170,88 @@ pca_plot2 <- ggplot(pca_data|>dplyr::filter(infxn=='infected'), aes(x = PC1, y =
   theme(axis.text.x = element_blank(),        # Remove x-axis text
     axis.ticks.x = element_blank())
 
-ggsave('PCA Biplot_mean_positions.png', pca_plot2,width =10, height=6)   
+ggsave('PCA Biplot_mean_positions_uninf.png', pca_plot2,width =10, height=6)   
+```
+
+For Infected Individuals(included only 'g+2+t+' and 'g+2-t-' cytokine combinations as per Rodo(2019)):
+
+```{r}
+#create a wide format where each cytokine combination is a separate column
+profile_wide <- data_tidy_vacc_profile |>
+# Filter for uninfected individuals and specific cytokine combinations
+  filter(infxn == "infected" & cyt_combn %in% c("g+2+t+", "g+2-t-")) %>%
+  tidyr::pivot_wider(names_from = cyt_combn, values_from = response)
+
+# Select only the cytokine combination columns for PCA
+cytokine_cols <- colnames(profile_wide)[grepl("\\+", colnames(profile_wide))]
+pca_result <- prcomp(profile_wide[, cytokine_cols], scale. = TRUE)  
+
+# combine PCA results with the original metadata
+pca_data <- as.data.frame(pca_result$x) |>
+  dplyr::bind_cols(profile_wide |>
+  dplyr::select(vaccine, sex, infxn))
+
+# extract PCA loadings
+loadings <- as.data.frame(pca_result$rotation[, 1:2]) # Take only the first two PCs
+loadings$cyt_combn <- rownames(loadings) # Add cytokine combination names
+
+# scaling factor for arrows
+arrow_scale <- 8.5  
+
+# scale PCA loadings for arrows
+scaled_loadings <- loadings |>
+  dplyr::mutate(PC1 = PC1 * arrow_scale,
+         PC2 = PC2 * arrow_scale)
+
+pca_var <- pca_result$sdev^2
+pca_var_explained <- pca_var / sum(pca_var)
+pc1_var <- scales::percent(pca_var_explained[1])
+pc2_var <- scales::percent(pca_var_explained[2])
+```
+
+Plot the PCA Biplot for Infected Individuals:
+
+```{r}
+pca_plot1 <- ggplot(pca_data, aes(x = PC1, y = PC2, color = vaccine, shape = sex)) +
+  geom_point(size = 3) +
+  #facet_wrap(~ infxn) +
+  labs(title = "PCA Biplot", x = "PC1", y = "PC2") + 
+  geom_segment(data = scaled_loadings, aes(x = 0, y = 0, xend = PC1, yend = PC2), 
+               arrow = arrow(length = unit(0.3, "cm")), color = "red", inherit.aes = FALSE) +
+  geom_text(data = scaled_loadings, aes(x = PC1, y = PC2, label = cyt_combn), nudge_x = 1.5, nudge_y = 0.4, vjust = 1, hjust = 1, color = "red", inherit.aes = FALSE) +
+  theme_cowplot_bg()  
+ggsave('PCA_Biplot_inf.png', pca_plot1, width = 12, height = 6)
+```
+
+PCA biplot with mean positions shown for each vaccine sex combo for Infected Individuals:
+```{r}
+# calculate mean positions for each vaccine and sex combination
+mean_positions <- pca_data %>%
+  dplyr::group_by(vaccine, sex,infxn) %>%
+  dplyr::summarize(PC1 = mean(PC1), PC2 = mean(PC2))
+
+mean_positions <- mean_positions %>%
+  dplyr::mutate(combo = paste(vaccine, sex, sep = "-"))
+
+pca_plot2 <- ggplot(pca_data, aes(x = PC1, y = PC2, color = vaccine, shape = sex)) +
+  labs(title = "PCA Biplot with Mean Positions", 
+       x = paste0("PC1 (", pc1_var, ")"), 
+       y = paste0("PC2 (", pc2_var, ")")) +
+  geom_segment(data = scaled_loadings, aes(x = 0, y = 0, xend = PC1, yend = PC2), 
+               arrow = arrow(length = unit(0.3, "cm")), color = "black", inherit.aes = FALSE) +
+  geom_text(data = scaled_loadings, aes(x = PC1, y = PC2, label = cyt_combn), 
+            nudge_x = 1.5, nudge_y = 0.4, vjust = 1, hjust = 1, color = "black", 
+            inherit.aes = FALSE) +
+  geom_point(size = 3) +          
+  geom_point(data = mean_positions, aes(x = PC1, y = PC2, color = vaccine), 
+             shape=1, fill=NA, size = 4, stroke=1.5) +
+  ggrepel::geom_text_repel(data = mean_positions, aes(x = PC1, y = PC2, label = combo), 
+            nudge_x = 1, nudge_y = 0.5, vjust = 1, hjust = 1, color = "black") +
+  theme_cowplot_bg()+ 
+  theme(axis.text.x = element_blank(),        # Remove x-axis text
+    axis.ticks.x = element_blank())
+
+ggsave('PCA Biplot_mean_positions_inf.png', pca_plot2,width =10, height=6)   
 ```
 
 PCA biplot with ellipses:
