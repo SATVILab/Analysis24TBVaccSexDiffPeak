@@ -307,7 +307,6 @@ participant_ids <- data_tidy_vacc_summed %>%
 ```
 
 ## Linear Models
-Fit linear models for each vaccine to assess the effect of sex on the immune response profile for infected individuals:
 
 ```{r}
 # Filter data to include only infected individuals
@@ -321,7 +320,10 @@ inf_data <- data_tidy_vacc_profile %>%
 vaccine_inf <- inf_data %>%
   group_by(vaccine) %>%
   group_split()
+```
 
+Fit linear models to assess the effect of sex on the immune response profile for infected individuals:
+```{r}
 # Initialize list to store models
 lm_inf <- list()
 
@@ -335,7 +337,47 @@ summary(lm_inf[['h1']])
 summary(lm_inf[['m72']])
 ```
 
-Fit linear models for each vaccine to assess the effect of sex on the immune response profile for uninfected individuals:
+Fit linear models to assess the effect of sex on the immune response profile for each cytokine combination for infected individuals:
+
+```{r}
+# Initialize list to store models for each vaccine and cytokine combination
+lm_inf <- list()
+
+# Loop through each vaccine group and fit LM for every cytokine combination
+for (group in vaccine_inf) {
+  vaccine <- unique(group$vaccine)
+  
+  # Split the group further by cytokine combination
+  cyt_combn_groups <- group %>%
+    group_by(cyt_combn) %>%
+    group_split()
+  
+  # Initialize sublist for each vaccine
+  lm_inf[[vaccine]] <- list()
+  
+  # Fit models for each cytokine combination
+  for (cytokine_group in cyt_combn_groups) {
+    cytokine <- unique(cytokine_group$cyt_combn)
+    model <- lm(response ~ sex, data = cytokine_group)
+    
+    # Store the model in the list under the vaccine and cytokine combination
+    lm_inf[[vaccine]][[cytokine]] <- model
+  }
+}
+
+# Loop through all vaccines and their cytokine combinations to obtain results
+for (vaccine in names(lm_inf)) {
+  cat("Vaccine:", vaccine, "\n")
+  
+  for (cytokine in names(lm_inf[[vaccine]])) {
+    cat("\nCytokine Combination:", cytokine, "\n")
+    print(summary(lm_inf[[vaccine]][[cytokine]]))
+    cat("\n--------------------------------------------\n")
+  }
+}
+```
+
+For uninfected individuals:
 
 ```{r}
 # Filter data to include only uninfected individuals
@@ -349,7 +391,11 @@ uninf_data <- data_tidy_vacc_profile %>%
 vaccine_uninf <- uninf_data %>%
   group_by(vaccine) %>%
   group_split()
+```
 
+Fit linear models for each vaccine to assess the effect of sex on the immune response profile for uninfected individuals:
+
+```{r}
 # Initialize list to store models
 lm_uninf <- list()
 
@@ -361,6 +407,46 @@ for (group in vaccine_uninf) {
 }
 summary(lm_uninf[['h1']])
 summary(lm_uninf[['m72']])
+```
+
+Fit linear models to assess the effect of sex on the immune response profile for each cytokine combination for uninfected individuals:
+
+```{r}
+# Initialize list to store models for each vaccine and cytokine combination
+lm_uninf <- list()
+
+# Loop through each vaccine group and fit LM for every cytokine combination
+for (group in vaccine_uninf) {
+  vaccine <- unique(group$vaccine)
+  
+  # Split the group further by cytokine combination
+  cyt_combn_groups <- group %>%
+    group_by(cyt_combn) %>%
+    group_split()
+  
+  # Initialize sublist for each vaccine
+  lm_uninf[[vaccine]] <- list()
+  
+  # Fit models for each cytokine combination
+  for (cytokine_group in cyt_combn_groups) {
+    cytokine <- unique(cytokine_group$cyt_combn)
+    model <- lm(response ~ sex, data = cytokine_group)
+    
+    # Store the model in the list under the vaccine and cytokine combination
+    lm_uninf[[vaccine]][[cytokine]] <- model
+  }
+}
+
+# Loop through all vaccines and their cytokine combinations to obtain results
+for (vaccine in names(lm_uninf)) {
+  cat("Vaccine:", vaccine, "\n")
+  
+  for (cytokine in names(lm_uninf[[vaccine]])) {
+    cat("\nCytokine Combination:", cytokine, "\n")
+    print(summary(lm_uninf[[vaccine]][[cytokine]]))
+    cat("\n--------------------------------------------\n")
+  }
+}
 ```
 
 ## Beta Regression Models
