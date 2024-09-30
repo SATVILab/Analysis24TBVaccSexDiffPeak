@@ -345,6 +345,12 @@ residual_vacc_uninf <- ggplot(data_uninfected_residuals, aes(x = vaccine, y = re
   scale_x_discrete(labels = toupper) +
   theme_cowplot_bg()
 ggsave('Residual by Vaccine for Uninfected Individuals.png',residual_vacc_uninf)
+
+# Q-Q plot for the residuals of the beta regression model
+png("Q-Q Plot of Residuals for Uninfected Individuals.png")
+qqnorm(beta_uninfected$residuals)
+qqline(beta_uninfected$residuals, col = "red", lwd = 2)
+dev.off()
 ```
 
 Exploration of Residuals for infected Individuals:
@@ -369,6 +375,12 @@ residual_vacc_inf <- ggplot(data_infected_residuals, aes(x = vaccine, y = residu
   scale_x_discrete(labels = toupper) +
   theme_cowplot_bg()
 ggsave('Residual by Vaccine for Infected Individuals.png',residual_vacc_inf)
+
+# Q-Q plot for the residuals of the beta regression model
+png("Q-Q Plot of Residuals for Infected Individuals.png")
+qqnorm(beta_infected$residuals)
+qqline(beta_infected$residuals, col = "red", lwd = 2)
+dev.off()
 ```
 
 
