@@ -322,6 +322,57 @@ abline(h= 0, col= "red", lwd= 2)
 dev.off()
 ```
 
+Exploration of Residuals for uninfected Individuals:
+
+```{r}
+# Add residuals to the dataset
+data_uninfected_residuals <-  data_tidy_vacc_summed %>%
+  dplyr::filter(infxn == "uninfected") %>%
+  dplyr::mutate(residuals = beta_uninfected$residuals)
+
+# Summarize residuals by vaccine
+residual_summary <- data_uninfected_residuals |> 
+  dplyr::group_by(vaccine) |> 
+  dplyr::summarise(mean_residual = mean(residuals, na.rm = TRUE),
+                   sd_residual = sd(residuals, na.rm = TRUE),
+                   min_residual = min(residuals, na.rm = TRUE),
+                   max_residual = max(residuals, na.rm = TRUE))
+
+# Boxplot of residuals by vaccine
+residual_vacc_uninf <- ggplot(data_uninfected_residuals, aes(x = vaccine, y = residuals)) +
+  geom_boxplot() +
+  labs(y = "Residuals", x = "Vaccine") +
+  scale_x_discrete(labels = toupper) +
+  theme_cowplot_bg()
+ggsave('Residual by Vaccine for Uninfected Individuals.png',residual_vacc_uninf)
+```
+
+Exploration of Residuals for infected Individuals:
+```{r}
+# Add residuals to the dataset
+data_infected_residuals <-  data_tidy_vacc_summed %>%
+  dplyr::filter(infxn == "infected") %>%
+  dplyr::mutate(residuals = beta_infected$residuals)
+
+# Summarize residuals by vaccine
+residual_summary <- data_infected_residuals |> 
+  dplyr::group_by(vaccine) |> 
+  dplyr::summarise(mean_residual = mean(residuals, na.rm = TRUE),
+                   sd_residual = sd(residuals, na.rm = TRUE),
+                   min_residual = min(residuals, na.rm = TRUE),
+                   max_residual = max(residuals, na.rm = TRUE))
+
+# Boxplot of residuals by vaccine
+residual_vacc_inf <- ggplot(data_infected_residuals, aes(x = vaccine, y = residuals)) +
+  geom_boxplot() +
+  labs(y = "Residuals", x = "Vaccine") +
+  scale_x_discrete(labels = toupper) +
+  theme_cowplot_bg()
+ggsave('Residual by Vaccine for Infected Individuals.png',residual_vacc_inf)
+```
+
+
+
 Fit Beta Regression Models of Infected to examine the effect of sex on response for each vaccine :
 
 ```{r}
