@@ -43,12 +43,34 @@ data_tidy_vacc_summed <- data_tidy_vacc_freq |>
   vacc_extract_peak() |>
   dplyr::filter(subset == "cd4")
 data_tidy_vacc_summed
+
 data_tidy_vacc_profile <- data_tidy_vacc_freq |>
   vacc_calc_response_profile("response") |>
   vacc_calc_vaccine_induced_response("response") |>
+  vacc_set_neg_to_zero("response") |>
   vacc_extract_peak() |>
   dplyr::filter(subset == "cd4")
 data_tidy_vacc_profile
+
+data_tidy_vacc_raw_profile <- data_tidy_vacc_freq |>
+  vacc_calc_response_profile(cn_resp = "response")|>
+  vacc_extract_peak()
+
+data_tidy_vacc_vi_profile <- data_tidy_vacc_freq |>
+  vacc_calc_vaccine_induced_response(cn_resp = "response") |>
+  vacc_calc_response_profile(cn_resp = "response")|>
+  vacc_extract_peak()
+
+data_tidy_vacc_raw_fds_prop <- data_tidy_vacc_freq |>
+  vacc_calc_fds_prop(cn_resp = "response")|>
+  vacc_extract_peak() |>
+  dplyr::filter(subset == "cd4")
+
+data_tidy_vacc_vi_fds_prop <-  data_tidy_vacc_freq |>
+  vacc_calc_vaccine_induced_response(cn_resp = "response") |>
+  vacc_calc_fds_prop(cn_resp = "response") |>
+  vacc_extract_peak() |>
+  dplyr::filter(subset == "cd4")
 ```
 
 ## Data exploration
@@ -319,6 +341,69 @@ plot(beta_infected$residuals, main = "Residuals of the infected Beta Regression 
 abline(h= 0, col= "red", lwd= 2)
 dev.off()
 ```
+
+Exploration of Residuals for uninfected Individuals:
+
+```{r}
+# Add residuals to the dataset
+data_uninfected_residuals <-  data_tidy_vacc_summed %>%
+  dplyr::filter(infxn == "uninfected") %>%
+  dplyr::mutate(residuals = beta_uninfected$residuals)
+
+# Summarize residuals by vaccine
+residual_summary <- data_uninfected_residuals |> 
+  dplyr::group_by(vaccine) |> 
+  dplyr::summarise(mean_residual = mean(residuals, na.rm = TRUE),
+                   sd_residual = sd(residuals, na.rm = TRUE),
+                   min_residual = min(residuals, na.rm = TRUE),
+                   max_residual = max(residuals, na.rm = TRUE))
+
+# Boxplot of residuals by vaccine
+residual_vacc_uninf <- ggplot(data_uninfected_residuals, aes(x = vaccine, y = residuals)) +
+  geom_boxplot() +
+  labs(y = "Residuals", x = "Vaccine") +
+  scale_x_discrete(labels = toupper) +
+  theme_cowplot_bg()
+ggsave('Residual by Vaccine for Uninfected Individuals.png',residual_vacc_uninf)
+
+# Q-Q plot for the residuals of the beta regression model
+png("Q-Q Plot of Residuals for Uninfected Individuals.png")
+qqnorm(beta_uninfected$residuals)
+qqline(beta_uninfected$residuals, col = "red", lwd = 2)
+dev.off()
+```
+
+Exploration of Residuals for infected Individuals:
+```{r}
+# Add residuals to the dataset
+data_infected_residuals <-  data_tidy_vacc_summed %>%
+  dplyr::filter(infxn == "infected") %>%
+  dplyr::mutate(residuals = beta_infected$residuals)
+
+# Summarize residuals by vaccine
+residual_summary <- data_infected_residuals |> 
+  dplyr::group_by(vaccine) |> 
+  dplyr::summarise(mean_residual = mean(residuals, na.rm = TRUE),
+                   sd_residual = sd(residuals, na.rm = TRUE),
+                   min_residual = min(residuals, na.rm = TRUE),
+                   max_residual = max(residuals, na.rm = TRUE))
+
+# Boxplot of residuals by vaccine
+residual_vacc_inf <- ggplot(data_infected_residuals, aes(x = vaccine, y = residuals)) +
+  geom_boxplot() +
+  labs(y = "Residuals", x = "Vaccine") +
+  scale_x_discrete(labels = toupper) +
+  theme_cowplot_bg()
+ggsave('Residual by Vaccine for Infected Individuals.png',residual_vacc_inf)
+
+# Q-Q plot for the residuals of the beta regression model
+png("Q-Q Plot of Residuals for Infected Individuals.png")
+qqnorm(beta_infected$residuals)
+qqline(beta_infected$residuals, col = "red", lwd = 2)
+dev.off()
+```
+
+
 
 Fit Beta Regression Models of Infected to examine the effect of sex on response for each vaccine :
 
@@ -653,6 +738,7 @@ boxplot1 <- ggplot(data_tidy_vacc_profile, aes(x = sex, y = response, fill = sex
 
 ggsave('Response by Sex and Infection Status for each CYtokine Combination.png',boxplot1)  
 
+
  #subset boxplot filtering 2 vaccines
 selected_vaccines <- c('h1', 'mva85a')
 
@@ -797,4 +883,92 @@ pca_plot4 <- ggplot(pca_data, aes(x = PC1, y = PC2, color = sex_vaccine)) +
   theme(legend.position = "right")
 
 ggsave('PCA_biplot_ellipses_vaccine_sex.png', pca_plot4, width = 12, height = 6)
+```
+
+Analysis of Response Profile:
+
+Transform response to lie between 0 and 1 using proportions:
+```{r}
+data_tidy_vacc_profile <- data_tidy_vacc_profile |>
+  dplyr::mutate(response_proportion = sqrt(response / 100) + 1e-6)
+```
+
+Identify individuals for which the sum of absolute changes from pre-vaccination(vaccine-induced summed response) was 0.02 or more:
+```{r}
+participant_ids <- data_tidy_vacc_summed %>%
+  filter(response >= 0.02) %>%
+  pull(ptid)
+```
+
+Fit beta regression model for infected individuals with interaction term
+```{r}
+library(betareg)
+library(statmod)
+library(numDeriv)
+
+full_model_inf1 <- betareg(response_proportion ~ sex * vaccine * cyt_combn, data = data_tidy_vacc_profile|>
+                  dplyr::filter(ptid %in% participant_ids)|>
+                  dplyr::filter(infxn =="infected"))
+
+summary(full_model_inf1)
+
+library(purrr)
+
+# Split the dataset by cytokine combination
+cytokine_splits <- data_tidy_vacc_profile %>%
+  filter(ptid %in% participant_ids)|>
+  filter(infxn == "infected") %>%
+  split(.$cyt_combn)
+
+# Fit beta regression model for each cytokine combination
+beta_models_inf1 <- map(cytokine_splits, function(data) {
+  betareg(response_proportion ~ sex * vaccine, data = data)
+})
+beta_models_inf1
+```
+
+Fit the models excluding the mva85a and h56 vaccines due to small sample sizes
+
+```{r}
+full_model_inf2 <- betareg(response_proportion ~ sex * vaccine * cyt_combn, data = data_tidy_vacc_profile|>
+                            dplyr::filter(ptid %in% participant_ids)|>
+                            dplyr::filter(infxn =="infected"))|>
+                            filter(!vaccine %in% c("mva85a", "h56"))
+
+summary(full_model_inf2)
+
+cytokine_splits <- data_tidy_vacc_profile %>%
+  filter(ptid %in% participant_ids) %>%
+  filter(infxn == "infected") %>%
+  filter(!vaccine %in% c("mva85a", "h56")) %>%  # Exclude specific vaccines
+  split(.$cyt_combn)
+
+# Fit beta regression model for each cytokine combination
+beta_models2 <- map(cytokine_splits, function(data) {
+  betareg(response_proportion ~ sex * vaccine, data = data)
+})
+beta_models2
+
+```
+
+
+Fit beta regression model for uninfected individuals with interaction term
+```{r}
+full_model_uninf1 <- betareg(response_proportion ~ sex * vaccine * cyt_combn, data = data_tidy_vacc_profile|>
+                  dplyr::filter(ptid %in% participant_ids)|>
+                  dplyr::filter(infxn =="uninfected"))
+
+summary(full_model_uninf1)
+
+# Split the dataset by cytokine combination
+cytokine_splits <- data_tidy_vacc_profile %>%
+  filter(ptid %in% participant_ids)|>
+  filter(infxn == "uninfected") %>%
+  split(.$cyt_combn)
+
+# Fit beta regression model for each cytokine combination
+beta_models_uninf1 <- map(cytokine_splits, function(data) {
+  betareg(response_proportion ~ sex * vaccine, data = data)
+})
+beta_models_uninf1
 ```
