@@ -17,6 +17,10 @@ theme_cowplot_bg <- function() {
     plot.background = element_rect(fill = "white")
   )
 }
+fn_vec <- list.files("R", pattern = "\\.R$", full.names = TRUE)
+for (i in seq_along(fn_vec)) {
+  source(fn_vec[[i]])
+}
 ```
 
 
@@ -61,6 +65,8 @@ knitr::kable(data_tidy_vacc_summed |>
 ```
 
 ## Analysis
+
+### Data exploration
 
 ```{r}
 #install.packages("cowplot")
@@ -122,6 +128,10 @@ boxplot3 <- ggplot(data_tidy_vacc_summed, aes(x = sex, y = response, fill = sex)
 ggsave("Boxplot of Summed Response by Sex and Infection Status.png",boxplot3)
 ```
 
+### Analysis of summed response
+
+#### Mann-Whitney
+
 Perform Mann-Whitney Tests :
 
 ```{r}
@@ -157,25 +167,9 @@ mw_tbl_summed <- mw_tbl_summed |>
 mw_tbl_summed
 ```
 
-Obtain the square root of the summed response:
+#### Kruskal-Wallis
 
-```{r}
-data_tidy_vacc_summed <- data_tidy_vacc_summed |>
-  dplyr::mutate(response_sqrt = sqrt(response))
-```
-
-Boxplot of square root transformed summed responses by sex and infection status:
-
-```{r}
-boxplot4 <- ggplot(data_tidy_vacc_summed, aes(x = sex, y = response_sqrt, fill = sex)) +
-  geom_boxplot() +
-  facet_grid(vaccine ~ infxn) +
-  labs(title = "Square Root of Summed Response by Sex and Infection Status", x = "Sex", y = "Square Root of Summed Response") +
-  theme_cowplot_bg() 
-
-# Save the plot
-ggsave("Boxplot of Square Root Summed Response by Sex and Infection Status.png", boxplot4)
-```
+This repeats the Mann-Whitney tests.
 
 Kruskal-Wallis Test:
 
@@ -185,7 +179,7 @@ library(dplyr)
 library(purrr)
 
 vacc_inf_sex <- with(data_tidy_vacc_summed, interaction(vaccine, infxn, sex))
-test <- kruskal.test(response_sqrt ~ vacc_inf_sex, data = data_tidy_vacc_summed)
+test <- kruskal.test(response ~ vacc_inf_sex, data = data_tidy_vacc_summed)
 test
 
 results <- data_tidy_vacc_summed |>
@@ -198,10 +192,34 @@ results |>
   select(vaccine, infxn, p_value)
 ```
 
+#### Beta regression
+
+##### Data transformation
+
+Obtain the square root of the summed response:
+
+```{r}
+data_tidy_vacc_summed <- data_tidy_vacc_summed |>
+  dplyr::mutate(response_proportion = sqrt(response / 100))
+```
+
+Boxplot of square root transformed summed responses by sex and infection status:
+
+```{r}
+boxplot4 <- ggplot(data_tidy_vacc_summed, aes(x = sex, y = response_proportion, fill = sex)) +
+  geom_boxplot() +
+  facet_grid(vaccine ~ infxn) +
+  labs(title = "Square Root of Summed Response by Sex and Infection Status", x = "Sex", y = "Square Root of Summed Response") +
+  theme_cowplot_bg() 
+
+# Save the plot
+ggsave("Boxplot of Square Root Summed Response by Sex and Infection Status.png", boxplot4)
+```
+
 Skewness of Responses:
 
 ```{r}
-histogram1 <- ggplot(data_tidy_vacc_summed, aes(x = response_sqrt)) +
+histogram1 <- ggplot(data_tidy_vacc_summed, aes(x = response_proportion)) +
   geom_histogram(binwidth = 0.05, fill = 'blue', color = 'black', alpha = 0.7) +
   facet_wrap(~ vaccine) +
   labs(title = "Histogram of Responses by Vaccine",
@@ -210,6 +228,8 @@ histogram1 <- ggplot(data_tidy_vacc_summed, aes(x = response_sqrt)) +
   theme_cowplot_bg()
 ggsave('Histogram of skewness of square root of summed responses by vaccine.png',histogram1)     
 ```
+
+##### Fit
 
 Load betareg package:
 
@@ -306,8 +326,11 @@ Fit Beta Regression Models of Infected to examine the effect of sex on response 
 data_tidy_vacc_summed_inf <- data_tidy_vacc_summed |>  
     dplyr::filter(infxn == "infected") 
 
-beta_h1_inf <- betareg( response_proportion ~ sex,  data = data_tidy_vacc_summed_inf |>
-    dplyr::filter(vaccine == "h1")) 
+beta_h1_inf <- betareg(
+  response_proportion ~ sex, 
+  data = data_tidy_vacc_summed_inf |>
+    dplyr::filter(vaccine == "h1")
+  ) 
 
 beta_h56_inf <- betareg( response_proportion ~ sex,  data = data_tidy_vacc_summed_inf |> 
    dplyr::filter(vaccine == "h56")) 
@@ -336,7 +359,8 @@ Fit Beta Regression Models of Uninfected to examine the effect of sex on respons
 data_tidy_vacc_summed_uninf <- data_tidy_vacc_summed |>  
     dplyr::filter(infxn == "uninfected") 
 
-beta_h1_uninf <- betareg( response_proportion ~ sex, data = data_tidy_vacc_summed_uninf |>
+beta_h1_uninf <- betareg( 
+  response_proportion ~ sex, data = data_tidy_vacc_summed_uninf |>
     dplyr::filter(vaccine == "h1")) 
 
 beta_h56_uninf <- betareg(response_proportion ~ sex,data = data_tidy_vacc_summed_uninf |> 
@@ -380,6 +404,19 @@ library(lmtest)
 Perform Simultaneous Hypothesis Testing for Infected :
 
 ```{r}
+mod_list <- list()
+for (infxn in c("uninfected", "infected")) {
+  data_mod_inf <- data_tidy_vacc_summed |>
+      dplyr::filter(infxn == infxn)
+  for (vacc in unique(data_mod_inf$vaccine)) {
+    mod_list[[infxn]][[vacc]] <- fit_reg_beta(
+      data_mod_inf,
+      ref_vacc = "h56"
+    )
+  }
+}
+
+
 full_model_inf <- betareg(response_proportion ~ vaccine*sex, data_tidy_vacc_summed |> 
     dplyr::filter(infxn =="infected") |>
     dplyr::mutate(vaccine = factor(.data$vaccine, levels = c("h56", "h1", "mva85a", "m72"))))
@@ -515,17 +552,20 @@ conf_intervals <- confint(full_model_uninf)
 conf_intervals_mva85a <- confint(full_model_uninf_mva85a)
 conf_intervals_h1 <- confint(full_model_uninf_h1)
 conf_intervals_bcg <- confint(full_model_uninf_bcg)
+conf_intervals_m72 <- confint(full_model_uninf_m72)
 
 # Create a data frame for plotting
 plot_data <- data.frame(
   Vaccine = c("H56", "H1", "MVA85A","BCG", "M72"),
-  Estimate = c(coef_estimates["sexmale"],  # For H56
+  Estimate = c(
+    coef_estimates["sexmale"],  # For H56
     coef_estimates["sexmale"] + coef_estimates["vaccineh1:sexmale"],  # For H1
     coef_estimates["sexmale"] + coef_estimates["vaccinemva85a:sexmale"],  # For MVA85A
     coef_estimates["sexmale"] + coef_estimates["vaccinebcg:sexmale"],  # For bcg
     coef_estimates["sexmale"] + coef_estimates["vaccinem72:sexmale"]  # For M72
   ),
-  CI_Lower = c(conf_intervals["sexmale", "2.5 %"],  # For H56
+  CI_Lower = c(
+    conf_intervals["sexmale", "2.5 %"],  # For H56
     conf_intervals_h1["sexmale", "2.5 %"],  # For H1
     conf_intervals_mva85a["sexmale", "2.5 %"],  # For MVA85A
     conf_intervals_bcg["sexmale", "2.5 %"],  # for bcg
@@ -538,7 +578,6 @@ plot_data <- data.frame(
     conf_intervals_bcg["sexmale", "97.5 %"],  # For bcg
     conf_intervals_m72["sexmale", "97.5 %"]  # For M72
   ),
-
   Color = c("H56", "H1", "MVA85A", "BCG", "M72")              
 )
 

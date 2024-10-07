@@ -13,3 +13,4 @@ _output/**
 docs/**
 # End of projr section
 
+R/fit_reg_beta.R
