@@ -16,6 +16,7 @@ library(numDeriv)
 library(betareg)
 library(car)
 library(lmtest)
+library(dplyr)
 theme_cowplot_bg <- function() {
   theme_cowplot() +
   theme(
@@ -467,7 +468,7 @@ p.adjust(p_vec, method = "holm")
 
 ##### Global test for sex effect for at least one vaccine
 
-
+For Infected Individuals:
 
 ```{r}
 full_model_inf <- betareg(
@@ -505,6 +506,43 @@ inf_tbl_global <- tibble(
   `P-value` = p_vec_global,
   `Q-value` = p.adjust(p_vec_global, method = "holm")
 )
+```
+
+For Uninfected Individuals:
+
+```{r}
+full_model_uninf <- betareg(response_proportion ~ vaccine*sex, 
+                    data = data_tidy_vacc_summed|>
+                 dplyr::filter(infxn == "uninfected")|>
+    dplyr::mutate(vaccine = factor(.data$vaccine, levels = c("h56", "h1", "mva85a","bcg", "m72"))))
+​
+null_model_uninf <- betareg(response_proportion ~ vaccine,
+                   data = data_tidy_vacc_summed|>
+                dplyr::filter(infxn == "uninfected"))
+
+summary_full_uninf <- summary(full_model_uninf)
+summary_null_uninf <- summary(null_model_uninf)
+
+#extract p-values
+p_vec <- c(mean(summary_full_uninf$coefficients$mu[-1, "Pr(>|z|)"]), 
+           mean(summary_null_uninf$coefficients$mu[-1, "Pr(>|z|)"]))
+p_vec
+
+#Holm's Correction
+p.adjust(p_vec, method = "holm")
+
+# Wald test
+Wald_uninf <- car::linearHypothesis(full_model_uninf, c("sexmale = 0", "vaccineh1:sexmale = 0","vaccinebcg:sexmale = 0", "vaccinemva85a:sexmale = 0", "vaccinem72:sexmale = 0"))
+
+# likelihood ratio test
+likelihood_uninf <- lmtest::lrtest(full_model_uninf, null_model_uninf)
+
+# extract p-values
+p_vec <- c(Wald_uninf$`Pr(>Chisq)`[2],likelihood_uninf$`Pr(>Chisq)`[2])
+p_vec
+
+# Holm's Correction
+p.adjust(p_vec, method = "holm")
 ```
 
 ##### Getting per-vaccine sex effect estimates and inference
@@ -594,7 +632,13 @@ inf_tbl_inf <- inf_tbl_inf |>
   dplyr::mutate(`Q-value` = p.adjust(`P-value`, method = "holm")) |>
   dplyr::select(Vaccine, Estimate, `P-value`, `Q-value`, `95% CI Lower`, `95% CI Upper`)
 
-p <- ggplot(
+inf_tbl_inf <- inf_tbl_inf |>
+  dplyr::mutate(
+    `P-value` = ifelse(`P-value` < 0.001, "<0.001", round(`P-value`, 3))
+  )
+
+# Plot with p-values
+p_inf <- ggplot(
   inf_tbl_inf,
   aes(
     x = Vaccine,
@@ -615,11 +659,19 @@ p <- ggplot(
   ) +
   theme(
     legend.position = "none"
+  ) +
+  # Add p-value text labels
+  geom_text(
+    aes(label = `P-value`, y = 1.2), # Adjust the y position for better placement
+    vjust = -0.5,
+    size = 3.5,
+    color = "black"
   )
-path_fig <- "Plot of estimates of effect sizes and CI.pdf"
+
+path_fig_inf <- "Plot of estimates of effect sizes and CI infected.pdf"
 ggsave(
-  path_fig,
-  p,
+  path_fig_inf,
+  p_inf,
   width = 10,
   height = 6
 )
@@ -627,121 +679,155 @@ ggsave(
 
 ###### Uninfected
 
-<!-- TODO: do the same thing as for infected !-->
-
 ```{r}
-full_model_uninf <- betareg(response_proportion ~ vaccine*sex, data = data_tidy_vacc_summed|>
-                 dplyr::filter(infxn == "uninfected")|>
-    dplyr::mutate(vaccine = factor(.data$vaccine, levels = c("h56", "h1", "mva85a","bcg", "m72"))))
-​
-full_model_uninf_mva85a <- betareg(response_proportion ~ vaccine*sex, data_tidy_vacc_summed |> 
-    dplyr::filter(infxn =="infected") |>
-    dplyr::mutate(vaccine = factor(.data$vaccine, levels = c("mva85a", "bcg", "h56","h1", "m72"))))
-
-full_model_uninf_h1 <- betareg(response_proportion ~ vaccine*sex, data_tidy_vacc_summed |> 
-    dplyr::filter(infxn =="infected") |>
-    dplyr::mutate(vaccine = factor(.data$vaccine, levels = c("h1", "mva85a", "bcg","h56", "m72"))))
-
-full_model_uninf_bcg <- betareg(response_proportion ~ vaccine*sex, data_tidy_vacc_summed |> 
-    dplyr::filter(infxn =="infected") |>
-    dplyr::mutate(vaccine = factor(.data$vaccine, levels = c("bcg","h56","h1", "mva85a", "m72"))))
-
-full_model_uninf_m72 <- betareg(response_proportion ~ vaccine*sex, data_tidy_vacc_summed |> 
-    dplyr::filter(infxn =="infected") |>
-    dplyr::mutate(vaccine = factor(.data$vaccine, levels = c("m72", "bcg","h56","h1", "mva85a"))))
-
-#for table for presentation slides:estimates of effects sizes and their CI
-# Extract coefficients and confidence intervals
-coef_summary <- summary(full_model_uninf)
-coef_estimates <- coef_summary$coefficients$mu[, "Estimate"]
-
-conf_intervals <- confint(full_model_uninf)
-conf_intervals_mva85a <- confint(full_model_uninf_mva85a)
-conf_intervals_h1 <- confint(full_model_uninf_h1)
-conf_intervals_bcg <- confint(full_model_uninf_bcg)
-conf_intervals_m72 <- confint(full_model_uninf_m72)
-
-# Create a data frame for plotting
-plot_data <- data.frame(
-  Vaccine = c("H56", "H1", "MVA85A","BCG", "M72"),
-  Estimate = c(
-    coef_estimates["sexmale"],  # For H56
-    coef_estimates["sexmale"] + coef_estimates["vaccineh1:sexmale"],  # For H1
-    coef_estimates["sexmale"] + coef_estimates["vaccinemva85a:sexmale"],  # For MVA85A
-    coef_estimates["sexmale"] + coef_estimates["vaccinebcg:sexmale"],  # For bcg
-    coef_estimates["sexmale"] + coef_estimates["vaccinem72:sexmale"]  # For M72
-  ),
-  CI_Lower = c(
-    conf_intervals["sexmale", "2.5 %"],  # For H56
-    conf_intervals_h1["sexmale", "2.5 %"],  # For H1
-    conf_intervals_mva85a["sexmale", "2.5 %"],  # For MVA85A
-    conf_intervals_bcg["sexmale", "2.5 %"],  # for bcg
-    conf_intervals_m72["sexmale", "2.5 %"]  # For M72
-  ),
-  CI_Upper = c(
-    conf_intervals["sexmale", "97.5 %"],  # For H56
-    conf_intervals_h1["sexmale", "97.5 %"],  # For H1
-    conf_intervals_mva85a["sexmale", "97.5 %"],  # For MVA85A
-    conf_intervals_bcg["sexmale", "97.5 %"],  # For bcg
-    conf_intervals_m72["sexmale", "97.5 %"]  # For M72
-  ),
-  Color = c("H56", "H1", "MVA85A", "BCG", "M72")              
+# h56
+full_model_uninf_h56 <- betareg(
+  response_proportion ~ sex * vaccine,
+  data_tidy_vacc_summed |> 
+    dplyr::filter(infxn == "uninfected") |>
+    dplyr::mutate(vaccine = factor(
+      .data$vaccine, levels = c("h56", "h1", "mva85a", "m72", "bcg")))
+)
+est_h56_uninf <- summary(full_model_uninf_h56)$coefficients[[1]]["sexmale", "Estimate"]
+p_val_h56_uninf <- summary(full_model_uninf_h56)$coefficients[[1]]["sexmale", "Pr(>|z|)"]
+ci_h56_uninf <- confint(full_model_uninf_h56)[2, c("2.5 %", "97.5 %")]
+h56_row_uninf <- tibble(
+  Vaccine = "H56",
+  Estimate = est_h56_uninf,
+  `95% CI Lower` = ci_h56_uninf[1],
+  `95% CI Upper` = ci_h56_uninf[2],
+  `P-value` = p_val_h56_uninf
 )
 
-# Plot the effect sizes with confidence intervals
-plot_infected3 <- ggplot(plot_data, aes(x = Vaccine, y = Estimate, ymin = CI_Lower, ymax = CI_Upper,width=0.1,color=Color)) +
-  geom_pointrange() +
-  labs(
-    x = 'Vaccine',
-    y = "Estimate",
-    caption = "Error bars represent 95% confidence intervals"
-  ) +
+# mva85a
+full_model_uninf_mva85a <- betareg(
+  response_proportion ~ sex * vaccine,
+  data_tidy_vacc_summed |> 
+    dplyr::filter(infxn == "uninfected") |>
+    dplyr::mutate(vaccine = factor(
+      .data$vaccine, levels = c("mva85a", "h56", "h1", "m72", "bcg"))
+    )
+)
+est_mva85a_uninf <- summary(full_model_uninf_mva85a)$coefficients[[1]]["sexmale", "Estimate"]
+p_val_mva85a_uninf <- summary(full_model_uninf_mva85a)$coefficients[[1]]["sexmale", "Pr(>|z|)"]
+ci_mva85a_uninf <- confint(full_model_uninf_mva85a)[2, c("2.5 %", "97.5 %")]
+mva85a_row_uninf <- tibble(
+  Vaccine = "MVA85A",
+  Estimate = est_mva85a_uninf,
+  `95% CI Lower` = ci_mva85a_uninf[1],
+  `95% CI Upper` = ci_mva85a_uninf[2],
+  `P-value` = p_val_mva85a_uninf
+)
+
+# h1
+full_model_uninf_h1 <- betareg(
+  response_proportion ~ sex * vaccine,
+  data_tidy_vacc_summed |> 
+    dplyr::filter(infxn == "uninfected") |>
+    dplyr::mutate(vaccine = factor(
+      .data$vaccine, levels = c("h1", "mva85a", "h56", "m72", "bcg"))
+    )
+)
+est_h1_uninf <- summary(full_model_uninf_h1)$coefficients[[1]]["sexmale", "Estimate"]
+p_val_h1_uninf <- summary(full_model_uninf_h1)$coefficients[[1]]["sexmale", "Pr(>|z|)"]
+ci_h1_uninf <- confint(full_model_uninf_h1)[2, c("2.5 %", "97.5 %")]
+h1_row_uninf <- tibble(
+  Vaccine = "H1",
+  Estimate = est_h1_uninf,
+  `95% CI Lower` = ci_h1_uninf[1],
+  `95% CI Upper` = ci_h1_uninf[2],
+  `P-value` = p_val_h1_uninf
+)
+
+# m72
+full_model_uninf_m72 <- betareg(
+  response_proportion ~ sex * vaccine,
+  data = data_tidy_vacc_summed |> 
+    dplyr::filter(infxn == "uninfected") |>
+    dplyr::mutate(
+      vaccine = factor(.data$vaccine, levels = c("m72", "h1", "mva85a", "h56", "bcg"))
+    )
+)
+est_m72_uninf <- summary(full_model_uninf_m72)$coefficients[[1]]["sexmale", "Estimate"]
+p_val_m72_uninf <- summary(full_model_uninf_m72)$coefficients[[1]]["sexmale", "Pr(>|z|)"]
+ci_m72_uninf <- confint(full_model_uninf_m72)[2, c("2.5 %", "97.5 %")]
+m72_row_uninf <- tibble(
+  Vaccine = "M72",
+  Estimate = est_m72_uninf,
+  `95% CI Lower` = ci_m72_uninf[1],
+  `95% CI Upper` = ci_m72_uninf[2],
+  `P-value` = p_val_m72_uninf
+)
+
+# bcg
+full_model_uninf_bcg <- betareg(
+  response_proportion ~ sex * vaccine,
+  data = data_tidy_vacc_summed |> 
+    dplyr::filter(infxn == "uninfected") |>
+    dplyr::mutate(
+      vaccine = factor(.data$vaccine, levels = c("bcg", "h1", "mva85a", "h56", "m72"))
+    )
+)
+est_bcg_uninf <- summary(full_model_uninf_bcg)$coefficients[[1]]["sexmale", "Estimate"]
+p_val_bcg_uninf <- summary(full_model_uninf_bcg)$coefficients[[1]]["sexmale", "Pr(>|z|)"]
+ci_bcg_uninf <- confint(full_model_uninf_bcg)[2, c("2.5 %", "97.5 %")]
+bcg_row_uninf <- tibble(
+  Vaccine = "BCG",
+  Estimate = est_bcg_uninf,
+  `95% CI Lower` = ci_bcg_uninf[1],
+  `95% CI Upper` = ci_bcg_uninf[2],
+  `P-value` = p_val_bcg_uninf
+)
+
+# Combine and adjust p-values for uninfected individuals
+inf_tbl_uninf <- bind_rows(h56_row_uninf, mva85a_row_uninf, h1_row_uninf, m72_row_uninf, bcg_row_uninf)
+inf_tbl_uninf <- inf_tbl_uninf |> 
+  dplyr::mutate(`Q-value` = p.adjust(`P-value`, method = "holm")) |>
+  dplyr::select(Vaccine, Estimate, `P-value`, `Q-value`, `95% CI Lower`, `95% CI Upper`)
+
+inf_tbl_uninf <- inf_tbl_uninf |>
+  dplyr::mutate(
+    `P-value` = ifelse(`P-value` < 0.001, "<0.001", round(`P-value`, 3))
+  )
+
+# Plot with p-values
+p_uninf <- ggplot(
+  inf_tbl_uninf,
+  aes(
+    x = Vaccine,
+    y = Estimate,
+    ymin = `95% CI Lower`,
+    ymax = `95% CI Upper`,
+    color = Vaccine
+  )
+) +
+  theme_cowplot_bg() +
+  cowplot::background_grid(major = "y") + 
   geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
-  geom_errorbar(aes(ymin = CI_Lower, ymax = CI_Upper), width = 0.1, linewidth=1) +
-  theme_cowplot_bg()+
-  scale_color_manual(values = c("H56" = "red", 
-                                "H1" = "blue", 
-                                "MVA85A" = "purple",
-                                "BCG" = "orange",
-                                "M72" = "green"))+  
-  background_grid(major='y') +
+  geom_pointrange() +
+  labs(x = "Vaccine", y = "Sex effect") +
+  geom_errorbar(aes(ymin = `95% CI Lower`, ymax = `95% CI Upper`), width = 0.1) +
+  scale_color_manual(
+    values = c("H56" = "red", "H1" = "blue", "MVA85A" = "purple", "M72" = "green", "BCG" = "orange")
+  ) +
   theme(
-    axis.title.x = element_text(size = 18), # Adjust size for x-axis title
-    axis.title.y = element_text(size = 18), # Adjust size for y-axis title
-    axis.text.x = element_text(size = 16),  # Adjust size for x-axis text labels
-    axis.text.y = element_text(size = 16),   # Adjust size for y-axis text labels
-    legend.position = "none",
-    plot.caption = element_text(size = 16)  # Adjust the caption size
-  )                            
+    legend.position = "none"
+  ) +
+  # Add p-value text labels
+  geom_text(
+    aes(label = `P-value`, y = 1.2), # Adjust the y position for better placement
+    vjust = -0.5,
+    size = 3.5,
+    color = "black"
+  )
 
-ggsave('Plot of estimates of effect sizes and CI.png',plot_infected3,width = 10, height = 6)
-
-null_model_uninf <- betareg(response_proportion ~ vaccine, data = data_tidy_vacc_summed|>
-                dplyr::filter(infxn == "uninfected"))
-
-summary_full_uninf <- summary(full_model_uninf)
-summary_null_uninf <- summary(null_model_uninf)
-
-#extract p-values
-p_vec <- c(mean(summary_full_uninf$coefficients$mu[-1, "Pr(>|z|)"]), 
-           mean(summary_null_uninf$coefficients$mu[-1, "Pr(>|z|)"]))
-p_vec
-
-#Holm's Correction
-p.adjust(p_vec, method = "holm")
-
-# Wald test
-Wald_uninf <- car::linearHypothesis(full_model_uninf, c("sexmale = 0", "vaccineh1:sexmale = 0","vaccinebcg:sexmale = 0", "vaccinemva85a:sexmale = 0", "vaccinem72:sexmale = 0"))
-
-# likelihood ratio test
-likelihood_uninf <- lmtest::lrtest(full_model_uninf, null_model_uninf)
-
-# extract p-values
-p_vec <- c(Wald_uninf$`Pr(>Chisq)`[2],likelihood_uninf$`Pr(>Chisq)`[2])
-p_vec
-
-# Holm's Correction
-p.adjust(p_vec, method = "holm")
+path_fig_uninf <- "Plot of estimates of effect sizes and CI uninfected.pdf"
+ggsave(
+  path_fig_uninf,
+  p_uninf,
+  width = 10,
+  height = 6
+)
 ```
 
 ## Response Profile
