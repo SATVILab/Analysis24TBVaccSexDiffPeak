@@ -662,9 +662,9 @@ p_inf <- ggplot(
   ) +
   # Add p-value text labels
   geom_text(
-    aes(label = `P-value`, y = 1.2), # Adjust the y position for better placement
+    aes(label = `P-value`, y =  `95% CI Upper`+0.08), # Adjust the y position for better placement
     vjust = -0.5,
-    size = 3.5,
+    size = 5,
     color = "black"
   )
 
@@ -815,9 +815,9 @@ p_uninf <- ggplot(
   ) +
   # Add p-value text labels
   geom_text(
-    aes(label = `P-value`, y = 1.2), # Adjust the y position for better placement
+    aes(label = `P-value`, y = `95% CI Upper`+ 0.08), # Adjust the y position for better placement
     vjust = -0.5,
-    size = 3.5,
+    size = 5,
     color = "black"
   )
 
