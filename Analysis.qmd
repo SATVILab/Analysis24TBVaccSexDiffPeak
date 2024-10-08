@@ -661,12 +661,12 @@ p_inf <- ggplot(
     legend.position = "none",
     axis.title.x = element_text(size = 20),  # Increase x-axis label size
     axis.title.y = element_text(size = 20),   # Increase y-axis label size
-    axis.text.x = element_text(size = 17),   # Adjust x-axis tick label size
-    axis.text.y = element_text(size = 17)  
+    axis.text.x = element_text(size = 19),   # Adjust x-axis tick label size
+    axis.text.y = element_text(size = 19)  
   ) +
   # Add p-value text labels
   geom_text(
-    aes(label = `P-value`, y =  `95% CI Upper`+0.08), # Adjust the y position for better placement
+    aes(label = `P-value`, y =  `95% CI Upper`+0.04), # Adjust the y position for better placement
     vjust = -0.5,
     size = 6,
     color = "black"
@@ -818,12 +818,12 @@ p_uninf <- ggplot(
     legend.position = "none",
     axis.title.x = element_text(size = 20),  # Increase x-axis label size
     axis.title.y = element_text(size = 20),   # Increase y-axis label size
-    axis.text.x = element_text(size = 17),   # Adjust x-axis tick label size
-    axis.text.y = element_text(size = 17)  
+    axis.text.x = element_text(size = 19),   # Adjust x-axis tick label size
+    axis.text.y = element_text(size = 19)  
   ) +
   # Add p-value text labels
   geom_text(
-    aes(label = `P-value`, y = `95% CI Upper`+ 0.08), # Adjust the y position for better placement
+    aes(label = `P-value`, y = `95% CI Upper`+ 0.04), # Adjust the y position for better placement
     vjust = -0.5,
     size = 6,
     color = "black"
