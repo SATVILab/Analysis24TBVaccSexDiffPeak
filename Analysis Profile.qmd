@@ -50,6 +50,8 @@ data_tidy_vacc_summed <- data_tidy_vacc_freq |>
 data_tidy_vacc_summed
 ```
 
+### Boxplot
+
 Boxplot of Response by Sex and Infection Status 
 
 ```{r}
@@ -89,8 +91,9 @@ ggsave('Response by Sex and Infection Status for each CYtokine Combination.png',
  
 ```
 
-## PCA Biplot
+#### PCA Biplot
 
+##### Uninfected
 For Uninfected Individuals(included only 'g+2+t+','g-2+t+' and 'g-2+t-' cytokine combinations 
 as per Rodo(2019)):
 
@@ -145,15 +148,21 @@ ggsave('PCA_Biplot_uninf.png', pca_plot1, width = 12, height = 6)
 PCA biplot with mean positions shown for each vaccine sex combo for uninfected Individuals:
 ```{r}
 # calculate mean positions for each vaccine and sex combination
+pca_data <- pca_data |>
+  mutate(vaccine = toupper(vaccine),  # Capitalize the vaccine names
+         sex = toupper(sex)           # Capitalize the sex values
+  ) |>
+  rename(Vaccine = vaccine, Sex = sex)
+
 mean_positions <- pca_data %>%
-  dplyr::group_by(vaccine, sex,infxn) %>%
+  dplyr::group_by(Vaccine, Sex,infxn) %>%
   dplyr::summarize(PC1 = mean(PC1), PC2 = mean(PC2))
 
 mean_positions <- mean_positions %>%
-  dplyr::mutate(combo = paste(vaccine, sex, sep = "-"))
+  dplyr::mutate(combo = paste(Vaccine, Sex, sep = "-"))
 
-pca_plot2 <- ggplot(pca_data, aes(x = PC1, y = PC2, color = vaccine, shape = sex)) +
-  labs(title = "PCA Biplot with Mean Positions", 
+pca_plot2 <- ggplot(pca_data, aes(x = PC1, y = PC2, color = Vaccine, shape = Sex)) +
+  labs( 
        x = paste0("PC1 (", pc1_var, ")"), 
        y = paste0("PC2 (", pc2_var, ")")) +
   geom_segment(data = scaled_loadings, aes(x = 0, y = 0, xend = PC1, yend = PC2), 
@@ -162,7 +171,7 @@ pca_plot2 <- ggplot(pca_data, aes(x = PC1, y = PC2, color = vaccine, shape = sex
             nudge_x = 1.5, nudge_y = 0.4, vjust = 1, hjust = 1, color = "black", 
             inherit.aes = FALSE) +
   geom_point(size = 3) +          
-  geom_point(data = mean_positions, aes(x = PC1, y = PC2, color = vaccine), 
+  geom_point(data = mean_positions, aes(x = PC1, y = PC2, color = Vaccine), 
              shape=1, fill=NA, size = 4, stroke=1.5) +
   ggrepel::geom_text_repel(data = mean_positions, aes(x = PC1, y = PC2, label = combo), 
             nudge_x = 1, nudge_y = 0.5, vjust = 1, hjust = 1, color = "black") +
@@ -170,8 +179,10 @@ pca_plot2 <- ggplot(pca_data, aes(x = PC1, y = PC2, color = vaccine, shape = sex
   theme(axis.text.x = element_blank(),        # Remove x-axis text
     axis.ticks.x = element_blank())
 
-ggsave('PCA Biplot_mean_positions_uninf.png', pca_plot2,width =10, height=6)   
+ggsave('PCA Biplot_uninf_peak.png', pca_plot2,width =10, height=6)   
 ```
+
+##### Infected
 
 For Infected Individuals(included only 'g+2+t+' and 'g+2-t-' cytokine combinations as per Rodo(2019)):
 
@@ -225,15 +236,20 @@ ggsave('PCA_Biplot_inf.png', pca_plot1, width = 12, height = 6)
 
 PCA biplot with mean positions shown for each vaccine sex combo for Infected Individuals:
 ```{r}
+pca_data <- pca_data |>
+  mutate(vaccine = toupper(vaccine),  # Capitalize the vaccine names
+         sex = toupper(sex)           # Capitalize the sex values
+  ) |>
+  rename(Vaccine = vaccine, Sex = sex)
 # calculate mean positions for each vaccine and sex combination
 mean_positions <- pca_data %>%
-  dplyr::group_by(vaccine, sex,infxn) %>%
+  dplyr::group_by(Vaccine, Sex,infxn) %>%
   dplyr::summarize(PC1 = mean(PC1), PC2 = mean(PC2))
 
 mean_positions <- mean_positions %>%
-  dplyr::mutate(combo = paste(vaccine, sex, sep = "-"))
+  dplyr::mutate(combo = paste(Vaccine, Sex, sep = "-"))
 
-pca_plot2 <- ggplot(pca_data, aes(x = PC1, y = PC2, color = vaccine, shape = sex)) +
+pca_plot2 <- ggplot(pca_data, aes(x = PC1, y = PC2, color = Vaccine, shape = Sex)) +
   labs(title = "PCA Biplot with Mean Positions", 
        x = paste0("PC1 (", pc1_var, ")"), 
        y = paste0("PC2 (", pc2_var, ")")) +
@@ -243,7 +259,7 @@ pca_plot2 <- ggplot(pca_data, aes(x = PC1, y = PC2, color = vaccine, shape = sex
             nudge_x = 1.5, nudge_y = 0.4, vjust = 1, hjust = 1, color = "black", 
             inherit.aes = FALSE) +
   geom_point(size = 3) +          
-  geom_point(data = mean_positions, aes(x = PC1, y = PC2, color = vaccine), 
+  geom_point(data = mean_positions, aes(x = PC1, y = PC2, color = Vaccine), 
              shape=1, fill=NA, size = 4, stroke=1.5) +
   ggrepel::geom_text_repel(data = mean_positions, aes(x = PC1, y = PC2, label = combo), 
             nudge_x = 1, nudge_y = 0.5, vjust = 1, hjust = 1, color = "black") +
@@ -251,7 +267,7 @@ pca_plot2 <- ggplot(pca_data, aes(x = PC1, y = PC2, color = vaccine, shape = sex
   theme(axis.text.x = element_blank(),        # Remove x-axis text
     axis.ticks.x = element_blank())
 
-ggsave('PCA Biplot_mean_positions_inf.png', pca_plot2,width =10, height=6)   
+ggsave('PCA Biplot_inf_peak.png', pca_plot2,width =10, height=6)   
 ```
 
 PCA biplot with ellipses:
