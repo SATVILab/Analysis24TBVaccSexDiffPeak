@@ -388,10 +388,12 @@ residual_summary <- data_uninfected_residuals |>
                    max_residual = max(residuals, na.rm = TRUE))
 
 # Boxplot of residuals by vaccine
-residual_vacc_uninf <- ggplot(data_uninfected_residuals, aes(x = vaccine, y = residuals)) +
+residual_vacc_uninf <- ggplot(data_uninfected_residuals, aes(x = vaccine, y = residuals, fill= vaccine))+
   geom_boxplot() +
   labs(y = "Residuals", x = "Vaccine") +
   scale_x_discrete(labels = toupper) +
+  scale_fill_manual(
+    values = c("h56" = "red", "h1" = "blue", "mva85a" = "purple", "m72" = "green", "bcg" = "orange")) +
   theme_cowplot_bg()
 ggsave('Residual by Vaccine for Uninfected Individuals.png',residual_vacc_uninf)
 
@@ -419,10 +421,12 @@ residual_summary <- data_infected_residuals |>
                    max_residual = max(residuals, na.rm = TRUE))
 
 # Boxplot of residuals by vaccine
-residual_vacc_inf <- ggplot(data_infected_residuals, aes(x = vaccine, y = residuals)) +
+residual_vacc_inf <- ggplot(data_infected_residuals, aes(x = vaccine, y = residuals, fill= vaccine)) +
   geom_boxplot() +
   labs(y = "Residuals", x = "Vaccine") +
   scale_x_discrete(labels = toupper) +
+  scale_fill_manual(
+    values = c("h56" = "red", "h1" = "blue", "mva85a" = "purple", "m72" = "green")) +
   theme_cowplot_bg()
 ggsave('Residual by Vaccine for Infected Individuals.png',residual_vacc_inf)
 
