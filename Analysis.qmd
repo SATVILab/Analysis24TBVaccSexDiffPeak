@@ -661,6 +661,7 @@ p_inf <- ggplot(
   scale_color_manual(
     values = c("H56" = "red", "H1" = "blue", "MVA85A" = "purple", "M72" = "green")
   ) +
+  scale_y_continuous(limits = c(NA, 0.8)) +
   theme(
     legend.position = "none",
     axis.title.x = element_text(size = 20),  # Increase x-axis label size
@@ -818,6 +819,7 @@ p_uninf <- ggplot(
   scale_color_manual(
     values = c("H56" = "red", "H1" = "blue", "MVA85A" = "purple", "M72" = "green", "BCG" = "orange")
   ) +
+  scale_y_continuous(limits = c(NA, 1.5)) +
   theme(
     legend.position = "none",
     axis.title.x = element_text(size = 20),  # Increase x-axis label size
