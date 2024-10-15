@@ -521,3 +521,62 @@ beta_models_uninf1 <- map(cytokine_splits, function(data) {
 beta_models_uninf1
 ```
 
+### Global Test
+
+For infected:
+
+```{r}
+results_list <- list()
+
+# Get unique cytokine combinations from the data
+cyt_combinations <- unique(data_tidy_vacc_profile$cyt_combn)
+
+# Loop over each cytokine combination
+for (cyt in cyt_combinations) {
+  
+  # Filter data for the current cytokine combination and infected individuals
+  data_cyt <- data_tidy_vacc_profile |> 
+    dplyr::filter(ptid %in% participant_ids)|>
+    dplyr::filter(cyt_combn == cyt, infxn == "infected")
+  
+  # Full model with sex and vaccine interaction
+  full_model_inf <- lm(
+    response ~ sex * vaccine,
+    data = data_cyt
+  )
+  
+  # Null model without sex effect
+  null_model_inf <- lm(
+    response ~ vaccine,
+    data = data_cyt
+  )
+  
+  # Perform Wald test
+  Wald_test <- car::linearHypothesis(
+    full_model_inf,
+    c("sexmale = 0",
+      "sexmale:vaccinem72 = 0")
+  )
+  
+  # Perform likelihood ratio test
+  likelihood_test <- lmtest::lrtest(full_model_inf, null_model_inf)
+  
+  # Extract p-values for both tests
+  p_values <- c(Wald_test$`Pr(>Chisq)`[2], likelihood_test$`Pr(>Chisq)`[2])
+  
+  # Store the results in a tibble
+  result_tbl <- tibble(
+    Cytokine_Combination = cyt,
+    Test = c("Wald", "Likelihood Ratio"),
+    `P-value` = p_values,
+    `Q-value` = p.adjust(p_values, method = "holm")
+  )
+  
+  # Append the result for the current cytokine combination to the results list
+  results_list[[cyt]] <- result_tbl
+}
+
+# Combine the results for all cytokine combinations into a single tibble
+final_results_inf <- bind_rows(results_list)
+final_results_inf
+```
