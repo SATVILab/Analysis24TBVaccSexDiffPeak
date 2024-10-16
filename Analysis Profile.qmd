@@ -530,13 +530,14 @@ results_list <- list()
 
 # Get unique cytokine combinations from the data
 cyt_combinations <- unique(data_tidy_vacc_profile$cyt_combn)
+cyt_combinations <- c("g+2+t+", "g+2-t-")
 
 # Loop over each cytokine combination
 for (cyt in cyt_combinations) {
   
   # Filter data for the current cytokine combination and infected individuals
   data_cyt <- data_tidy_vacc_profile |> 
-    dplyr::filter(ptid %in% participant_ids)|>
+    dplyr::filter(ptid %in% participant_ids) |>
     dplyr::filter(cyt_combn == cyt, infxn == "infected")
   
   # Full model with sex and vaccine interaction
@@ -554,8 +555,7 @@ for (cyt in cyt_combinations) {
   # Perform Wald test
   Wald_test <- car::linearHypothesis(
     full_model_inf,
-    c("sexmale = 0",
-      "sexmale:vaccinem72 = 0")
+    c("sexmale = 0", "sexmale:vaccinem72 = 0")
   )
   
   # Perform likelihood ratio test
@@ -564,12 +564,11 @@ for (cyt in cyt_combinations) {
   # Extract p-values for both tests
   p_values <- c(Wald_test$`Pr(>Chisq)`[2], likelihood_test$`Pr(>Chisq)`[2])
   
-  # Store the results in a tibble
+  # Store the results in a tibble (without adjustment yet)
   result_tbl <- tibble(
     Cytokine_Combination = cyt,
     Test = c("Wald", "Likelihood Ratio"),
-    `P-value` = p_values,
-    `Q-value` = p.adjust(p_values, method = "holm")
+    `P-value` = p_values
   )
   
   # Append the result for the current cytokine combination to the results list
@@ -578,5 +577,14 @@ for (cyt in cyt_combinations) {
 
 # Combine the results for all cytokine combinations into a single tibble
 final_results_inf <- bind_rows(results_list)
+
+# Apply Holm adjustment to the p-values grouped by the test type
+final_results_inf <- final_results_inf |> 
+  dplyr::group_by(Test) |> 
+  dplyr::mutate(`Holm-adjusted P-value` = p.adjust(`P-value`, method = "holm")) |> 
+  dplyr::ungroup()
+
+# View final results with Holm-adjusted p-values
 final_results_inf
+
 ```
