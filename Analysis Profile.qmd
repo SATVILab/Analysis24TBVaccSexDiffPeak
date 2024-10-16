@@ -555,7 +555,6 @@ for (cyt in cyt_combinations) {
   Wald_test <- car::linearHypothesis(
     full_model_inf,
     c("sexmale = 0",
-     "vaccinem72",  
       "sexmale:vaccinem72 = 0")
   )
   
