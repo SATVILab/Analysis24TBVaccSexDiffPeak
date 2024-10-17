@@ -846,7 +846,7 @@ For g+2-t-:
 library(dplyr)
 library(purrr)
 
-mw_tbl_summed <- purrr::map_df(unique(data_tidy_vacc_summed$infxn), function(infxn) {
+mw_tbl_profile <- purrr::map_df(unique(data_tidy_vacc_profile$infxn), function(infxn) {
   data_tidy_vacc_sub <- data_tidy_vacc_profile |>
     dplyr::filter(infxn == .env$infxn) |>
     dplyr::filter(cyt_combn == "g+2-t-")
@@ -871,11 +871,11 @@ mw_tbl_summed <- purrr::map_df(unique(data_tidy_vacc_summed$infxn), function(inf
   })
 })
 
-mw_tbl_summed <- mw_tbl_summed |>
+mw_tbl_profile <- mw_tbl_profile |>
   dplyr::group_by(infxn) |>
   dplyr::mutate(q_val = p.adjust(p_val, method = "holm")) |>
   dplyr::ungroup()
 
-mw_tbl_summed
+mw_tbl_profile|>filter(infxn=="infected")
 
 ```
