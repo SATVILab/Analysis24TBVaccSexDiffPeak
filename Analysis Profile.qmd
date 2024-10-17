@@ -315,13 +315,6 @@ ggsave('PCA_biplot_ellipses_vaccine_sex.png', pca_plot4, width = 12, height = 6)
 
 ## Analysis of Response Profile:
 
-Identify individuals for which the sum of absolute changes from pre-vaccination(vaccine-induced summed response) was 0.02 or more:
-```{r}
-participant_ids <- data_tidy_vacc_summed %>%
-  filter(response >= 0.02) %>%
-  pull(ptid)
-```
-
 ## Linear Models
 
 ```{r}
@@ -466,12 +459,6 @@ for (vaccine in names(lm_uninf)) {
 ```
 
 ## Beta Regression Models
-Transform response to lie between 0 and 1 using proportions:
-```{r}
-data_tidy_vacc_profile <- data_tidy_vacc_profile |>
-  dplyr::mutate(response = pmax(0, response)) |> 
-  dplyr::mutate(response_proportion = sqrt(response / 100) + 1e-6)
-```
 
 Fit beta regression model for infected individuals with interaction term
 ```{r}
@@ -521,7 +508,46 @@ beta_models_uninf1 <- map(cytokine_splits, function(data) {
 beta_models_uninf1
 ```
 
-### Global Test
+### Beta and linear Model Comparison
+
+Transform response to lie between 0 and 1 using proportions:
+```{r}
+data_tidy_vacc_profile <- data_tidy_vacc_profile |>
+  dplyr::mutate(response = pmax(0, response)) |> 
+  dplyr::mutate(response_proportion = sqrt(response / 100) + 1e-6)
+```
+
+Identify individuals for which the sum of absolute changes from pre-vaccination(vaccine-induced summed response) was 0.02 or more:
+```{r}
+participant_ids <- data_tidy_vacc_summed %>%
+  filter(response >= 0.02) %>%
+  pull(ptid)
+```
+
+```{r}
+cytokine_splits <- data_tidy_vacc_profile %>%
+  filter(ptid %in% participant_ids) %>%
+  dplyr::filter(
+    cyt_combn %in% c("g+2+t+", "g+2-t-")
+  ) |>
+  filter(infxn == "infected") %>%
+  filter(!vaccine %in% c("mva85a", "h56")) %>%  # Exclude specific vaccines
+  split(.$cyt_combn)
+
+library(purrr)
+# Fit beta regression model for each cytokine combination
+comp_models_inf <- map(cytokine_splits, function(data) {
+  beta_fit <- betareg(response_proportion ~ sex * vaccine, data = data)
+  lm_fit <- lm(response_proportion ~ sex * vaccine, data = data)
+  list("beta" = beta_fit, "lm" = lm_fit)
+})
+model_results_comp <- lapply(comp_models_inf, function(x) {
+  list("beta" = BIC(x$beta), "lm" = BIC(x$lm))
+})
+```
+
+
+#### Global Test
 
 For infected:
 
