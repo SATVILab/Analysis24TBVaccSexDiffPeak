@@ -711,7 +711,7 @@ p_inf <- ggplot(
   labs(x = "Vaccine", y = "Sex effect") +
   geom_errorbar(aes(ymin = `95% CI Lower`, ymax = `95% CI Upper`), width = 0.1) +
   scale_color_manual(
-    values = c("H1" = "blue","M72" = "red")
+    values = c("H1" = "blue","M72" = "green")
   ) +
   scale_y_continuous(limits = c(NA, 0.6)) +
   theme(
