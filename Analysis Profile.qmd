@@ -639,7 +639,9 @@ for (cyt in cyt_combinations) {
 }
 ```
 
-###### Getting per-vaccine sex effect estimates and inference for "g+2+t+"
+###### Getting per-vaccine sex effect estimates and inference 
+
+For "g+2+t+":
 
 ```{r}
 # Filter data for the current cytokine combination and infected individuals
@@ -729,11 +731,151 @@ p_inf <- ggplot(
     color = "black"
   )
 
-path_fig_inf <- "Estimates of effect sizes and CI response_profile.pdf"
+path_fig_inf <- "Estimates of effect sizes and CI response_profile1.pdf"
 ggsave(
   path_fig_inf,
   p_inf,
   width = 10,
   height = 6
 )
+```
+
+For "g+2-t-":
+
+```{r}
+# Filter data for the current cytokine combination and infected individuals
+data <- data_tidy_vacc_profile |> 
+  dplyr::filter(ptid %in% participant_ids) |>
+  dplyr::filter(cyt_combn == "g+2-t-", infxn == "infected")
+
+# H1
+full_model_h1 <- betareg(
+  response_proportion ~ sex * vaccine,
+  data = data |> 
+    dplyr::mutate(vaccine = factor(vaccine, levels = c("h1", "m72")))
+)
+
+est_h1 <- summary(full_model_h1)$coefficients[[1]]["sexmale", "Estimate"]
+p_val_h1 <- summary(full_model_h1)$coefficients[[1]]["sexmale", "Pr(>|z|)"]
+ci_h1 <- confint(full_model_h1)[2, c("2.5 %", "97.5 %")]
+h1_row <- tibble(
+  Vaccine = "H1",
+  Estimate = est_h1,
+  `95% CI Lower` = ci_h1[1],
+  `95% CI Upper` = ci_h1[2],
+  `P-value` = p_val_h1
+)
+
+#M72
+full_model_m72 <- betareg(
+  response_proportion ~ sex * vaccine,
+  data = data |> 
+    dplyr::mutate(vaccine = factor(vaccine, levels = c("m72","h1")))
+)
+
+est_m72 <- summary(full_model_m72)$coefficients[[1]]["sexmale", "Estimate"]
+p_val_m72 <- summary(full_model_m72)$coefficients[[1]]["sexmale", "Pr(>|z|)"]
+ci_m72 <- confint(full_model_m72)[2, c("2.5 %", "97.5 %")]
+m72_row <- tibble(
+  Vaccine = "M72",
+  Estimate = est_m72,
+  `95% CI Lower` = ci_m72[1],
+  `95% CI Upper` = ci_m72[2],
+  `P-value` = p_val_m72
+)
+
+inf_tbl_inf <- bind_rows(h1_row, m72_row)
+inf_tbl_inf <- inf_tbl_inf |> 
+  dplyr::mutate(`Q-value` = p.adjust(`P-value`, method = "holm")) |>
+  dplyr::select(Vaccine, Estimate, `P-value`, `Q-value`, `95% CI Lower`, `95% CI Upper`)
+
+inf_tbl_inf <- inf_tbl_inf |>
+  dplyr::mutate(
+    `P-value` = ifelse(`P-value` < 0.001, "<0.001", round(`P-value`, 3))
+  )
+
+# Plot with p-values
+p_inf <- ggplot(
+  inf_tbl_inf,
+  aes(
+    x = Vaccine,
+    y = Estimate,
+    ymin = `95% CI Lower`,
+    ymax = `95% CI Upper`,
+    color = Vaccine
+  )
+) +
+  theme_cowplot_bg() +
+  cowplot::background_grid(major = "y") + 
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+  geom_pointrange() +
+  labs(x = "Vaccine", y = "Sex effect") +
+  geom_errorbar(aes(ymin = `95% CI Lower`, ymax = `95% CI Upper`), width = 0.1) +
+  scale_color_manual(
+    values = c("H1" = "blue","M72" = "green")
+  ) +
+  scale_y_continuous(limits = c(NA, 0.6)) +
+  theme(
+    legend.position = "none",
+    axis.title.x = element_text(size = 20),  # Increase x-axis label size
+    axis.title.y = element_text(size = 20),   # Increase y-axis label size
+    axis.text.x = element_text(size = 19),   # Adjust x-axis tick label size
+    axis.text.y = element_text(size = 19)  
+  ) +
+  # Add p-value text labels
+  geom_text(
+    aes(label = `P-value`, y =  `95% CI Upper`+0.04),
+    vjust = -0.5,
+    size = 6,
+    color = "black"
+  )
+
+path_fig_inf <- "Estimates of effect sizes and CI response_profile1.pdf"
+ggsave(
+  path_fig_inf,
+  p_inf,
+  width = 10,
+  height = 6
+)
+```
+
+###### Non Parametric
+
+For g+2-t-:
+```{r}
+library(dplyr)
+library(purrr)
+
+mw_tbl_summed <- purrr::map_df(unique(data_tidy_vacc_summed$infxn), function(infxn) {
+  data_tidy_vacc_sub <- data_tidy_vacc_profile |>
+    dplyr::filter(infxn == .env$infxn) |>
+    dplyr::filter(cyt_combn == "g+2-t-")
+  
+  purrr::map_df(unique(data_tidy_vacc_sub$vaccine), function(vaccine) {
+    data_tidy_vacc_sub_sub <- data_tidy_vacc_sub |>
+      dplyr::filter(vaccine == .env$vaccine)
+    
+    resp_vec_male <- data_tidy_vacc_sub_sub |>
+      dplyr::filter(sex == "male") |>
+      dplyr::pull(response)
+    resp_vec_female <- data_tidy_vacc_sub_sub |>
+      dplyr::filter(sex == "female") |>
+      dplyr::pull(response)
+    
+    # Allow approximate p-value computation
+    p_val <- wilcox.test(resp_vec_male, resp_vec_female, exact = FALSE)$p.value
+    
+    tibble::tibble(
+      infxn = infxn, vaccine = vaccine, p_val = p_val
+    )
+  })
+})
+
+mw_tbl_summed <- mw_tbl_summed |>
+  dplyr::group_by(infxn) |>
+  dplyr::mutate(q_val = p.adjust(p_val, method = "holm")) |>
+  dplyr::ungroup()
+
+mw_tbl_summed
+
 ```
