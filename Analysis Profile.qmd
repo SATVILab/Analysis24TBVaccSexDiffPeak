@@ -567,14 +567,14 @@ for (cyt in cyt_combinations) {
     dplyr::filter(cyt_combn == cyt, infxn == "infected")
   
   # Full model with sex and vaccine interaction
-  full_model_inf <- lm(
-    response ~ sex * vaccine,
+  full_model_inf <- betareg(
+    response_proportion ~ sex * vaccine,
     data = data_cyt
   )
   
   # Null model without sex effect
-  null_model_inf <- lm(
-    response ~ vaccine,
+  null_model_inf <- betareg(
+    response_proportion ~ vaccine,
     data = data_cyt
   )
   
