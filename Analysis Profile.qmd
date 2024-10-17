@@ -731,7 +731,7 @@ p_inf <- ggplot(
     color = "black"
   )
 
-path_fig_inf <- "Estimates of effect sizes and CI response_profile1.pdf"
+path_fig_inf <- "Effect sizes and CI response_profile_peak1.pdf"
 ggsave(
   path_fig_inf,
   p_inf,
@@ -830,7 +830,7 @@ p_inf <- ggplot(
     color = "black"
   )
 
-path_fig_inf <- "Estimates of effect sizes and CI response_profile1.pdf"
+path_fig_inf <- "Effect sizes and CI response_profile_peak2.pdf"
 ggsave(
   path_fig_inf,
   p_inf,
