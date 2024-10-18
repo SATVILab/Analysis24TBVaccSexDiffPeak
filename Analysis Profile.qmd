@@ -514,6 +514,12 @@ beta_models_uninf1
 
 ### Beta and linear Model Comparison (using BIC)
 
+```{r}
+library(betareg)
+library(statmod)
+library(numDeriv)
+```
+
 Transform response to lie between 0 and 1 using proportions:
 ```{r}
 data_tidy_vacc_profile <- data_tidy_vacc_profile |>
@@ -843,7 +849,7 @@ ggsave(
 )
 ```
 
-Residual Plot:
+Residual Plot for g+2+t+:
 
 ```{r}
 
@@ -861,7 +867,28 @@ png("residuals_profile_peak1.png")
 plot(full_model$residuals, main = "",ylab='Residuals')
 abline(h= 0, col= "red", lwd= 2)
 dev.off()
+
+data <-  data %>%
+  dplyr::mutate(residuals = full_model$residuals)
+
+# Boxplot of residuals by vaccine
+residual_vacc_inf <- ggplot(data, aes(x = vaccine, y = residuals, fill= vaccine)) +
+  geom_boxplot() +
+  labs(y = "Residuals", x = "Vaccine") +
+  scale_x_discrete(labels = toupper) +
+  scale_fill_manual(
+    values = c("h1" = "blue","m72" = "green")) +
+  theme_cowplot_bg()
+ggsave('Resid_box_g+2+t+.png',residual_vacc_inf)
+
+# Q-Q plot for the residuals of the beta regression model
+png("QQ_g+2+t+.png")
+qqnorm(full_model$residuals,main = "")
+qqline(full_model$residuals, col = "red", lwd = 2)
+dev.off()
 ```
+
+Residual Plot for g+2-t-
 
 ```{r}
 # Filter data for the current cytokine combination and infected individuals
@@ -879,6 +906,24 @@ plot(full_model$residuals, main = "",ylab='Residuals')
 abline(h= 0, col= "red", lwd= 2)
 dev.off()
 
+data <-  data %>%
+  dplyr::mutate(residuals = full_model$residuals)
+
+# Boxplot of residuals by vaccine
+residual_vacc_inf <- ggplot(data, aes(x = vaccine, y = residuals, fill= vaccine)) +
+  geom_boxplot() +
+  labs(y = "Residuals", x = "Vaccine") +
+  scale_x_discrete(labels = toupper) +
+  scale_fill_manual(
+    values = c("h1" = "blue","m72" = "green")) +
+  theme_cowplot_bg()
+ggsave('Resid_box_g+2-t-.png',residual_vacc_inf)
+
+# Q-Q plot for the residuals of the beta regression model
+png("QQ_g+2-t-.png")
+qqnorm(full_model$residuals,main="")
+qqline(full_model$residuals, col = "red", lwd = 2)
+dev.off()
 ```
 
 ###### Non Parametric
