@@ -69,15 +69,20 @@ ggsave('Response by Sex and Infection Status for each CYtokine Combination.png',
 
  #subset boxplot filtering 2 vaccines
 selected_vaccines <- c('h1', 'm72')
+selected_cytokines <- c('g+2+t+', 'g+2-t-')
 
+# Selected 2 vaccines project slides
 # Filter the dataset
 filtered_data <- data_tidy_vacc_profile %>%
-  dplyr::filter(vaccine %in% selected_vaccines)
+  filter(vaccine %in% selected_vaccines) %>%
+  filter(cyt_combn %in% selected_cytokines) %>%
+  filter(infxn == "infected")
 
-boxplot2 <- ggplot(filtered_data, aes(x = sex, y = response, fill = sex)) +
+rp_box2 <- ggplot(filtered_data, aes(x = sex, y = response, fill = sex)) +
   geom_boxplot() +
   facet_grid(vaccine + infxn ~ cyt_combn, scales = "free") +
-  labs(title = "Response by Sex and Infection Status for each Cytokine Combination",
+  #facet_grid(vaccine ~ infxn,labeller = labeller(vaccine = toupper)) +
+  labs(title = " ",
        x = "Sex",
        y = "Response") +
   theme_cowplot_bg() +
@@ -85,10 +90,9 @@ boxplot2 <- ggplot(filtered_data, aes(x = sex, y = response, fill = sex)) +
     axis.ticks.x = element_blank(),
     legend.position = 'bottom')+   
   background_grid(major='y')+
-  guides(fill = guide_legend(title = NULL))
-#theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
-ggsave('Response by Sex and Infection Status for each CYtokine Combination.png',boxplot2)  
- 
+  guides(fill = guide_legend(title = NULL))   
+
+ggsave('Profile boxplot 2.png',rp_box2) 
 ```
 
 #### PCA Biplot
