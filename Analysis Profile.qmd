@@ -927,7 +927,7 @@ data_tidy_vacc_profile <- data_tidy_vacc_profile |>
   dplyr::mutate(response = pmax(0, response)) |> 
   dplyr::mutate(response_proportion =  pmax(
       response_proportion,
-      min(response_proportion[response_proportion > 1e-6])
+      min(response_proportion[response_proportion > min(response_proportion)])
     )
   )
 ```
@@ -956,4 +956,3 @@ data_tidy_vacc_profile <- data_tidy_vacc_profile |>
     - Results for individual vaccines
       - They match 
   
-
