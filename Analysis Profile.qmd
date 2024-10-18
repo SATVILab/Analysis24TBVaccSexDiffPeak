@@ -917,3 +917,43 @@ mw_tbl_profile <- mw_tbl_profile |>
 mw_tbl_profile|>filter(infxn=="infected")
 
 ```
+
+### Beta regression re-do
+
+Transform response to lie between 0 and 1 using proportions:
+
+```{r}
+data_tidy_vacc_profile <- data_tidy_vacc_profile |>
+  dplyr::mutate(response = pmax(0, response)) |> 
+  dplyr::mutate(response_proportion =  pmax(
+      response_proportion,
+      min(response_proportion[response_proportion > 1e-6])
+    )
+  )
+```
+
+- Response profile
+  - Model selection
+  - Transformation: choice of offset
+    - Fit beta regression with 1e-6 offset, show results
+    - Do non-parametric, show results
+    - Conclude these are incompatible
+    - Resolving the problem:
+      - Checked EDA, EDA matched non-parametric
+      - Non-parametric is insensitive to outliers and scaling of the response
+      - We first investigated the scaling of the response
+      - We noted that some observations were many logs lower than others
+        - They were 0 (after pushing up from negative), and were pushed to 10^-6.
+      - The beta regression uses a non-linear link function, so small values just above zero may appear faaaaaaar smaller than slightly larger values just above zero.
+        - It's like 0.000001 is 4 logs lower than 0.01 but in absolute terms they are very similar.
+      - We noted that the direction of difference was in line with males/females who had the lowest responses (those that were pushed up).
+        - < could show the observations like this in the data tables>
+      - So, we decided to try a different offset.
+        - Different vaccine and cytokine combinations had different numbers of observations on the offset, so adding a quantile of the response didn't work (e..g 0.05) as you could end up adding back this very small ofset.
+        - So, we chose to add the smallest non-offset value, which was on the sam eorder of magnitude as the other values.
+      - We did this, and it worked (results matched)
+      - Then, we look at the residual plot, adn the outliers are not so bad.
+    - Results for individual vaccines
+      - They match 
+  
+
