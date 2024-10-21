@@ -11,8 +11,8 @@ library(ggplot2)
 library(tibble)
 library(tidyr)
 library(dplyr)
-theme_cowplot_bg <- function() {
-  theme_cowplot() +
+theme_cowplot_bg <- function(font_size = 14) {
+  theme_cowplot(font_size = font_size) +
   theme(
     panel.background = element_rect(fill = "white"),
     plot.background = element_rect(fill = "white")
