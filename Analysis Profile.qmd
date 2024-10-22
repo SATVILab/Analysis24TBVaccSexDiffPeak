@@ -11,7 +11,7 @@ library(ggplot2)
 library(tibble)
 library(tidyr)
 library(dplyr)
-theme_cowplot_bg <- function(font_size = 14) {
+theme_cowplot_bg <- function(font_size = 16) {
   theme_cowplot(font_size = font_size) +
   theme(
     panel.background = element_rect(fill = "white"),
@@ -19,6 +19,7 @@ theme_cowplot_bg <- function(font_size = 14) {
   )
 }
 library(cowplot)
+library(stringr)
 ```
 
 ## Data prep
@@ -78,21 +79,20 @@ filtered_data <- data_tidy_vacc_profile %>%
   filter(cyt_combn %in% selected_cytokines) %>%
   filter(infxn == "infected")
 
-rp_box2 <- ggplot(filtered_data, aes(x = sex, y = response, fill = sex)) +
+rp_box2 <- ggplot(filtered_data, aes(x = str_to_title(sex), y = response, fill = str_to_title(sex))) +
   geom_boxplot() +
-  facet_grid(vaccine + infxn ~ cyt_combn, scales = "free") +
-  #facet_grid(vaccine ~ infxn,labeller = labeller(vaccine = toupper)) +
+  facet_grid(str_to_title(vaccine) + str_to_title(infxn) ~ cyt_combn, scales = "free", labeller = labeller(vaccine = toupper)) +
   labs(title = " ",
        x = "Sex",
        y = "Response") +
   theme_cowplot_bg() +
   theme(axis.text.x = element_blank(),        # Remove x-axis text
-    axis.ticks.x = element_blank(),
-    legend.position = 'bottom')+   
-  background_grid(major='y')+
-  guides(fill = guide_legend(title = NULL))   
+        axis.ticks.x = element_blank(),
+        legend.position = 'bottom') +   
+  background_grid(major='y') +
+  guides(fill = guide_legend(title = NULL))
 
-ggsave('Profile boxplot 2.png',rp_box2) 
+ggsave('Profile boxplot 2.png', rp_box2)
 ```
 
 #### PCA Biplot
@@ -154,7 +154,7 @@ PCA biplot with mean positions shown for each vaccine sex combo for uninfected I
 # calculate mean positions for each vaccine and sex combination
 pca_data <- pca_data |>
   mutate(vaccine = toupper(vaccine),  # Capitalize the vaccine names
-         sex = toupper(sex)           # Capitalize the sex values
+         sex = str_to_title(sex)           # Capitalize the sex values
   ) |>
   rename(Vaccine = vaccine, Sex = sex)
 
@@ -242,7 +242,7 @@ PCA biplot with mean positions shown for each vaccine sex combo for Infected Ind
 ```{r}
 pca_data <- pca_data |>
   mutate(vaccine = toupper(vaccine),  # Capitalize the vaccine names
-         sex = toupper(sex)           # Capitalize the sex values
+         sex = str_to_title(sex)           # Capitalize the sex values
   ) |>
   rename(Vaccine = vaccine, Sex = sex)
 # calculate mean positions for each vaccine and sex combination
@@ -254,7 +254,7 @@ mean_positions <- mean_positions %>%
   dplyr::mutate(combo = paste(Vaccine, Sex, sep = "-"))
 
 pca_plot2 <- ggplot(pca_data, aes(x = PC1, y = PC2, color = Vaccine, shape = Sex)) +
-  labs(title = "PCA Biplot with Mean Positions", 
+  labs(title =  " ", 
        x = paste0("PC1 (", pc1_var, ")"), 
        y = paste0("PC2 (", pc2_var, ")")) +
   geom_segment(data = scaled_loadings, aes(x = 0, y = 0, xend = PC1, yend = PC2), 
@@ -269,7 +269,10 @@ pca_plot2 <- ggplot(pca_data, aes(x = PC1, y = PC2, color = Vaccine, shape = Sex
             nudge_x = 1, nudge_y = 0.5, vjust = 1, hjust = 1, color = "black") +
   theme_cowplot_bg()+ 
   theme(axis.text.x = element_blank(),        # Remove x-axis text
-    axis.ticks.x = element_blank())
+    axis.ticks.x = element_blank())  +
+  guides(color = guide_legend(order = 1),     # Make "Vaccine" appear first in the legend
+         shape = guide_legend(order = 2))     # Make "Sex" appear second in the legend
+
 
 ggsave('PCA Biplot_inf_peak.png', pca_plot2,width =10, height=6)   
 ```
