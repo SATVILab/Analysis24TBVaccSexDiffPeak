@@ -880,8 +880,12 @@ residual_vacc_inf <- ggplot(data, aes(x = vaccine, y = residuals, fill= vaccine)
   labs(y = "Residuals", x = "Vaccine") +
   scale_x_discrete(labels = toupper) +
   scale_fill_manual(
-    values = c("h1" = "blue","m72" = "green")) +
-  theme_cowplot_bg()
+    values = c("h1" = "blue","m72" = "green"),  # Capitalized keys
+    labels = c("H56", "H1", "MVA85A", "M72")  # Capitalized labels for the legend
+  ) +
+    theme_cowplot_bg()+
+  guides(fill = guide_legend(title = "Vaccine"))  # Set the legend title to "Vaccine"
+
 ggsave('Resid_box_g+2+t+.png',residual_vacc_inf)
 
 # Q-Q plot for the residuals of the beta regression model
@@ -918,8 +922,12 @@ residual_vacc_inf <- ggplot(data, aes(x = vaccine, y = residuals, fill= vaccine)
   labs(y = "Residuals", x = "Vaccine") +
   scale_x_discrete(labels = toupper) +
   scale_fill_manual(
-    values = c("h1" = "blue","m72" = "green")) +
-  theme_cowplot_bg()
+    values = c("h1" = "blue","m72" = "green"),  # Capitalized keys
+    labels = c("H56", "H1", "MVA85A", "M72")  # Capitalized labels for the legend
+  ) +
+    theme_cowplot_bg()+
+  guides(fill = guide_legend(title = "Vaccine"))  # Set the legend title to "Vaccine"
+  
 ggsave('Resid_box_g+2-t-.png',residual_vacc_inf)
 
 # Q-Q plot for the residuals of the beta regression model
